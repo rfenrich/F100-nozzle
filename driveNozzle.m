@@ -75,25 +75,20 @@ figure
 subplot(2,3,1); hold on
 plot(xPosition,D(xPosition)/2)
 plot(xPosition,-D(xPosition)/2)
-title('Geometry','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+title('Geometry')
 axis equal
 
 subplot(2,3,2); hold on
 plot(xPositionIdeal,flow.ideal.Re)
 plot(xPosition,flow.nonideal.Re)
-title('Re','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+title('Re')
 legend2 = legend('ideal');
-set(legend2,'FontName','CMU Serif','FontSize',12)
 
 subplot(2,3,3); hold on
 plot(xPositionIdeal,flow.ideal.M)
 plot(xPosition,flow.nonideal.M)
-title('Mach Number','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+title('Mach Number')
 legend3 = legend('ideal');
-set(legend3,'FontName','CMU Serif','FontSize',12)
 
 subplot(2,3,4); hold on
 plot(xPositionIdeal,flow.ideal.P)
@@ -101,10 +96,8 @@ plot(xPosition,flow.nonideal.P)
 plot(xPositionIdeal,flow.ideal.Pstag)
 plot(xPosition,flow.nonideal.Pstag)
 plot(xPosition,freestream.P*ones(length(xPosition),1))
-title('Pressure (Pa)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+title('Pressure (Pa)')
 legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
-set(legend4,'FontName','CMU Serif','FontSize',12)
 
 subplot(2,3,5); hold on
 plot(xPositionIdeal,flow.ideal.T)
@@ -112,47 +105,38 @@ plot(xPosition,flow.nonideal.T)
 plot(xPositionIdeal,flow.ideal.Tstag)
 plot(xPosition,flow.nonideal.Tstag)
 plot(xPosition,freestream.T*ones(length(xPosition),1),'k-')
-title('Temperature (K)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+title('Temperature (K)')
 legend5 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
-set(legend5,'FontName','CMU Serif','FontSize',12)
 
 subplot(2,3,6); hold on
 plot(xPositionIdeal,flow.ideal.density)
 plot(xPosition,flow.nonideal.density)
-title('Density (kg/m^3)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+title('Density (kg/m^3)')
 legend6 = legend('ideal');
-set(legend6,'FontName','CMU Serif','FontSize',12)
 
 % ------------------------ PLOT NOZZLE GEOMETRY --------------------------
 figure; hold on
 plot(xPosition,D(xPosition)/2)
 plot(xPosition,-D(xPosition)/2)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Geometry','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Geometry')
 axis equal
 
 % ------------------------ PLOT REYNOLDS NUMBER --------------------------
 figure; hold on
 plot(xPositionIdeal,flow.ideal.Re);
 plot(xPosition,flow.nonideal.Re)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Re','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Re')
 legend2 = legend('ideal');
-set(legend2,'FontName','CMU Serif','FontSize',12)
 
 % ------------------------- PLOT MACH GEOMETRY ---------------------------
 figure; hold on
 plot(xPositionIdeal,flow.ideal.M)
 plot(xPosition,flow.nonideal.M)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Mach Number','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Mach Number')
 legend3 = legend('ideal');
-set(legend3,'FontName','CMU Serif','FontSize',12)
 
 % --------------------------- PLOT PRESSURES -----------------------------
 figure; hold on
@@ -161,11 +145,9 @@ plot(xPosition,flow.nonideal.P)
 plot(xPositionIdeal,flow.ideal.Pstag)
 plot(xPosition,flow.nonideal.Pstag)
 plot(xPosition,freestream.P*ones(length(xPosition),1))
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Pressure (Pa)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Pressure (Pa)')
 legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
-set(legend4,'FontName','CMU Serif','FontSize',12)
 
 % ------------------------- PLOT TEMPERATURES ----------------------------
 figure; hold on
@@ -185,24 +167,20 @@ set(legend5,'FontName','CMU Serif','FontSize',12)
 figure; hold on
 plot(xPositionIdeal,flow.ideal.density)
 plot(xPosition,flow.nonideal.density)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Density (kg/m^3)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Density (kg/m^3)')
 legend6 = legend('ideal');
-set(legend6,'FontName','CMU Serif','FontSize',12)
 
 % --------------------------- PLOT h_f & C_f -----------------------------
 figure
 subplot(1,2,1); hold on
 plot(xPosition,flow.nonideal.hf)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Wall convection coefficient h_f (W/m^2-K)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Wall convection coefficient h_f (W/m^2-K)')
 subplot(1,2,2); hold on
 plot(xPosition,flow.nonideal.Cf)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Friction coefficient C_f','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
+xlabel('Axial position (m)')
+title('Friction coefficient C_f')
 
 % --------------------- PLOT TEMPERATURE PROFILES ------------------------
 figure
@@ -212,11 +190,11 @@ plot(xPosition,flow.nonideal.Tstag)
 plot(xPosition,nozzle.nonideal.Tw)
 plot(xPosition,nozzle.nonideal.Text)
 plot(xPosition,freestream.T*ones(length(flow.nonideal.T)))
-title('Temperature profiles','FontName','CMU Serif','FontSize',16)
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-ylabel('Temperature (K)','FontName','CMU Serif','FontSize',14)
+title('Temperature profiles')
+xlabel('Axial position (m)')
+ylabel('Temperature (K)')
 legend7 = legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
-set(legend7,'FontName','CMU Serif','FontSize',12)
-set(gca,'FontName','CMU Serif','FontSize',14)
+
+formatPlot;
 
 

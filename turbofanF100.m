@@ -368,19 +368,19 @@ engine.nozzle = nozzle;
 % subplot(1,2,1)
 % hold on
 % plot(pStation/1e3,'-ro')
-% title('Stagnation pressure','FontName','CMU Serif','FontSize',16)
-% ylabel('kPa','FontName','CMU Serif','FontSize',14)
-% set(gca,'FontName','CMU Serif','FontSize',14);
+% title('Stagnation pressure')
+% ylabel('kPa')
 % set(gca,'XTickLabel',stationNumber);
 % grid on
 % subplot(1,2,2)
 % hold on
 % plot(TStation,'-ro')
-% title('Stagnation temperature','FontName','CMU Serif','FontSize',16)
-% ylabel('K','FontName','CMU Serif','FontSize',14)
-% set(gca,'FontName','CMU Serif','FontSize',14);
+% title('Stagnation temperature')
+% ylabel('K')
 % set(gca,'XTickLabel',stationNumber);
 % grid on
+%
+% formatPlot;
 
 end
 
