@@ -68,7 +68,7 @@ set(groot,'defaultAxesColorOrder',[0 0 0; 1 0 0; 1 0.25 0; 0 1 0; 0 0 1])
 %set(groot,'defaultAxesLineStyleOrder','-|--|:');
 
 % Useful function which defines diameter of nozzle; for plotting
-D = @(x) nozzleGeometry(x,nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape,'D');
+D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
 
 % -------------------- PLOT VARIOUS DATA IN 1 FIGURE ---------------------
 figure

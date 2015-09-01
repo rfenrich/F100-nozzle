@@ -46,10 +46,10 @@ pressureRatio = inlet.Pstag/freestream.P;
 
 % ========================== NOZZLE GEOMETRY =============================
 
-A = @(x) nozzleGeometry(x,nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape,'A');
-dAdx = @(x) nozzleGeometry(x,nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape,'dAdx');
-D = @(x) nozzleGeometry(x,nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape,'D');
-t = @(x) nozzleGeometry(x,nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape,'t'); % m, thickness of wall
+A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+dAdx = @(x) nozzleGeometry(x,'dAdx',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+t = @(x) nozzleGeometry(x,'t',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape); % m, thickness of wall
 
 % ======================= DETERMINE NOZZLE FLOW ==========================
 options.Display='none'; % used for fsolve

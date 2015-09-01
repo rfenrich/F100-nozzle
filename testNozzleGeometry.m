@@ -11,9 +11,9 @@ ARatio2 = 4;
 Dinlet = 0.88;
 
 % Make necessary functions
-A = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','A');
-dAdx = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','dAdx');
-D = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','D');
+A = @(x) nozzleGeometry(x,'A',Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear');
+dAdx = @(x) nozzleGeometry(x,'dAdx',Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear');
+D = @(x) nozzleGeometry(x,'D',Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear');
 t = @(x) 0.01; % m, thickness of wall
 
 % Discretize x-axis

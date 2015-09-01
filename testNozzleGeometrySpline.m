@@ -1,7 +1,7 @@
 % Test nozzleGeometry function by comparing areas calculated from the A(x)
 % area function, D(x) diameter function, and dAdx(x) area change function.
 %
-% Rick Fenrich 7/3/15
+% Rick Fenrich 9/1/15
 
 % Nozzle properties
 nozzleLength = 1.2;
@@ -11,9 +11,9 @@ ARatio2 = 4;
 Dinlet = 0.88;
 
 % Create nozzle geometry from which splines should be based:
-A = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','A');
-dAdx = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','dAdx');
-D = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','D');
+A = @(x) nozzleGeometry(x,'A',Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear');
+dAdx = @(x) nozzleGeometry(x,'dAdx',Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear');
+D = @(x) nozzleGeometry(x,'D',Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear');
 t = @(x) 0.01; % m, thickness of wall
 
 % Set control points for splines (xNode), value of function at control
@@ -21,11 +21,12 @@ t = @(x) 0.01; % m, thickness of wall
 xNode = 0:0.3:nozzleLength;
 yNode = D(0:0.3:nozzleLength)/2;
 slopes = [0, 0];
+pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
 
-% Make necessary functions for nozzle shape
-A = @(x) nozzleGeometrySpline(x,xNode,yNode,slopes,'A');
-dAdx = @(x) nozzleGeometrySpline(x,xNode,yNode,slopes,'dAdx');
-D = @(x) nozzleGeometrySpline(x,xNode,yNode,slopes,'D');
+% Make necessary functions for splined nozzle shape
+A = @(x) nozzleGeometry(x,'A',pp);
+dAdx = @(x) nozzleGeometry(x,'dAdx',pp);
+D = @(x) nozzleGeometry(x,'D',pp);
 t = @(x) 0.01; % m, thickness of wall
 
 % Discretize x-axis
