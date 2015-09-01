@@ -36,8 +36,9 @@ for ii = 1:length(x)
     if segment < 1
         segment = 1;
     end
-    dAdx(ii) = pp.coefs(segment,2) + 2*pp.coefs(segment,3)*x(ii) + 3*pp.coefs(segment,4)*x(ii)^2;
+    dydx(ii) = pp.coefs(segment,3) + 2*pp.coefs(segment,2)*(x(ii)-pp.breaks(segment)) + 3*pp.coefs(segment,1)*(x(ii)-pp.breaks(segment))^2;
 end
+dAdx = 2*pi*y.*dydx;
 
 % For right now, set a constant thickness for the nozzle, regardless of
 % shape. Can incorporate variable thickness calculations later above:

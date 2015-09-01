@@ -26,14 +26,19 @@ function [varargout] = nozzleGeometrySpline(x,xNode,yNode,slopes,outputResult)
 
 % ================= CALCULATE GEOMETRY BASED ON SHAPE ====================
 
-pp = spline(xNode,[slopes(1), yNode, slopes(2)]); % perform piecewise cubic spline interpolation
+pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
 y = ppval(pp,x); % cubic interpolant value at x
 D = 2*y;
 A = pi*y.^2;
 for ii = 1:length(x)
     ftemp = find(x(ii) <= pp.breaks);
     segment = ftemp(1) - 1; % segment numer of spline
-    dAdx(ii) = pp;
+    if segment < 1
+        segment = 1;
+    end
+    dydx(ii) = pp.coefs(segment,3) + 2*pp.coefs(segment,3)*x(ii) + 3*pp.coefs(segment,4)*x(ii)^2;
+end
+dAdx = 2*pi*y.*dydx;
 
 % For right now, set a constant thickness for the nozzle, regardless of
 % shape. Can incorporate variable thickness calculations later above:

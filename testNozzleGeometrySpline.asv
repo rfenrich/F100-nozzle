@@ -17,12 +17,12 @@ D = @(x) nozzleGeometry(x,Dinlet,nozzleLength,xThroat,ARatio1,ARatio2,'linear','
 t = @(x) 0.01; % m, thickness of wall
 
 % Set control points for splines (xNode), value of function at control
-% point (yNode), and slopes at start and end of spline (slopes)
+% point (yNode), and slopes at 
 xNode = 0:0.3:nozzleLength;
 yNode = D(0:0.3:nozzleLength)/2;
 slopes = [0, 0];
 
-% Make necessary functions for nozzle shape
+% Make necessary functions
 A = @(x) nozzleGeometrySpline(x,xNode,yNode,slopes,'A');
 dAdx = @(x) nozzleGeometrySpline(x,xNode,yNode,slopes,'dAdx');
 D = @(x) nozzleGeometrySpline(x,xNode,yNode,slopes,'D');
