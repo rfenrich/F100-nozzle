@@ -1,13 +1,13 @@
 % Drive the turbofanF100 function and make some interesting plots.
-% SI units are used for almost every parameter, except for altitude (in
+% SI units are used for every parameter, except for altitude (in
 % feet), and sfc (in lb/lbf/hr). Sorry for mixing units.
 %
 % Rick Fenrich 7/23/15, modified 7/31/15
 
 % =========================== SET INPUTS =================================
 
-altitude = 0; % in feet
-mach = 0.0;
+altitude = 35000; % in feet
+mach = 0.9;
 
 % ======================= INITIALIZE CONTROLS ============================
 % If a control is set to zero then turbofanF100.m will

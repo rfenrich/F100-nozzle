@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 4; % select the mission which defines input parameters
+mission = 5; % mission number for which certain input parameters are defined below
 hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % Define input parameters that will change based on flight regime:
@@ -31,21 +31,26 @@ elseif(mission == 4) % case with shock in nozzle
     altitude = 0;
     mach = 0.0;
     nozzle.inlet.Tstag = 900;
-    nozzle.inlet.Pstag = 1.1e5;
+    nozzle.inlet.Pstag = 1.2e5;
+elseif(mission == 5) % subsonic flow in nozzle
+    altitude = 0;
+    mach = 0.0;
+    nozzle.inlet.Tstag = 900;
+    nozzle.inlet.Pstag = 1.1e5;    
 end
 
 % Other necessary input parameters
 fluid.gam = 1.4;
-fluid.R = 287.06;
-nozzle.inlet.D = 0.651;
+fluid.R = 287.06; % J/kg-K
+nozzle.inlet.D = 0.651; % m 
 nozzle.Ainlet2Athroat = 1.368;
 nozzle.Aexit2Athroat = 1.4;
-nozzle.length = 1;
+nozzle.length = 1; % m
 nozzle.shape = 'linear';
-nozzle.xThroat = 0.33;
+nozzle.xThroat = 0.33; % m 
 nozzle.xExit = nozzle.length;
 
-atm = StndAtm(altitude*0.3048,'SI');
+atm = StndAtm(altitude*0.3048,'SI'); % obtain standard atmosphere characteristics
 freestream.P = atm.P; % Pa, atmospheric pressure
 freestream.T = atm.T; % K, atmospheric temperature
 
@@ -82,13 +87,13 @@ subplot(2,3,2); hold on
 plot(xPositionIdeal,flow.ideal.Re)
 plot(xPosition,flow.nonideal.Re)
 title('Re')
-legend2 = legend('ideal');
+legend('ideal');
 
 subplot(2,3,3); hold on
 plot(xPositionIdeal,flow.ideal.M)
 plot(xPosition,flow.nonideal.M)
 title('Mach Number')
-legend3 = legend('ideal');
+legend('ideal');
 
 subplot(2,3,4); hold on
 plot(xPositionIdeal,flow.ideal.P)
@@ -97,7 +102,7 @@ plot(xPositionIdeal,flow.ideal.Pstag)
 plot(xPosition,flow.nonideal.Pstag)
 plot(xPosition,freestream.P*ones(length(xPosition),1))
 title('Pressure (Pa)')
-legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
+legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
 
 subplot(2,3,5); hold on
 plot(xPositionIdeal,flow.ideal.T)
@@ -106,13 +111,13 @@ plot(xPositionIdeal,flow.ideal.Tstag)
 plot(xPosition,flow.nonideal.Tstag)
 plot(xPosition,freestream.T*ones(length(xPosition),1),'k-')
 title('Temperature (K)')
-legend5 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
+legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
 
 subplot(2,3,6); hold on
 plot(xPositionIdeal,flow.ideal.density)
 plot(xPosition,flow.nonideal.density)
 title('Density (kg/m^3)')
-legend6 = legend('ideal');
+legend('ideal');
 
 % ------------------------ PLOT NOZZLE GEOMETRY --------------------------
 figure; hold on
@@ -193,8 +198,9 @@ plot(xPosition,freestream.T*ones(length(flow.nonideal.T)))
 title('Temperature profiles')
 xlabel('Axial position (m)')
 ylabel('Temperature (K)')
-legend7 = legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
+legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
 
+% format plots to look nice
 formatPlot;
 
 
