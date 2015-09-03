@@ -89,6 +89,7 @@ elseif(strcmp(shape,'spline')) % for spline
     y = ppval(pp,x); % cubic interpolant value at x
     D = 2*y;
     A = pi*y.^2;
+    dydx = zeros(length(x),1); % initialize
     for ii = 1:length(x)
         ftemp = find(x(ii) <= pp.breaks);
         segment = ftemp(1) - 1; % segment numer of spline
@@ -156,7 +157,7 @@ elseif(strcmp(outputResult,'throat')) % find location & height of throat for spl
     end
     
     varargout{1} = xThroat;
-    varargout{2} = yThroat*2; % throat diameter
+    varargout{2} = yThroat; % throat diameter
 else
     varargout{1} = A;
     varargout{2} = dAdx;

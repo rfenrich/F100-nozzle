@@ -46,10 +46,67 @@ pressureRatio = inlet.Pstag/freestream.P;
 
 % ========================== NOZZLE GEOMETRY =============================
 
-A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
-dAdx = @(x) nozzleGeometry(x,'dAdx',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
-D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
-t = @(x) nozzleGeometry(x,'t',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape); % m, thickness of wall
+if(strcmp(nozzle.shape,'spline'))
+    % set up spline for nozzle
+    if(ischar(nozzle.spline.seed)) % seed shape is given
+        % Create nozzle geometry from which splines should be based:
+        Dseed = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.spline.seed);
+        % Set control points for splines (xNode), value of function at control
+        % point (yNode), and slopes at start and end of spline (slopes)
+        if(strcmp(nozzle.spline.controlPointSpacing,'regular'))
+            xNode = linspace(0,nozzle.length,nozzle.spline.nControlPoints)';
+            nozzle.spline.controlPointSpacing = xNode;
+        elseif(length(nozzle.spline.controlPointSpacing) == nozzle.spline.nControlPoints)
+            xNode = nozzle.spline.controlPointSpacing;
+            if(max(xNode) > nozzle.length || min(xNode) < 0) % check user given location of control points
+                error('Spline control point outside nozzle length domain');
+            end
+        else
+            error('Incorrect nozzle spline spacing given.');
+        end
+        yNode = Dseed(xNode)/2;
+        nozzle.spline.seed = [xNode, yNode];
+    elseif(numel(nozzle.spline.seed) == 2*nozzle.spline.nControlPoints)
+        % Extract control points for splines and their values from the
+        % given array
+        xNode = nozzle.spline.seed(:,1);
+        yNode = nozzle.spline.seed(:,2);
+        if(xNode(1) == 0 && xNode(end) == nozzle.length) % check user given control point values (yNode) match user given area ratios
+            areaRatio = yNode(end)^2/yNode(1)^2;
+            areaRatioTolerance = 1e-3;
+            if(areaRatio > nozzle.Aexit2Athroat/nozzle.Ainlet2Athroat + areaRatioTolerance || areaRatio < nozzle.Aexit2Athroat/nozzle.Ainlet2Athroat - areaRatioTolerance)
+               error('Spline control point values do not match given nozzle area ratios'); 
+            end
+        end
+    else
+        error('Incorrect nozzle spline seed given.')
+    end
+    
+    slopes = nozzle.spline.slopes;
+    pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
+    
+    % Adjust nozzle throat size/location information if it has changed
+    [xThroat, yThroat] = nozzleGeometry(0, 'throat', pp);
+    if(xThroat ~= nozzle.xThroat)
+        fprintf('throat size/location changed with spline parameterization\n');
+    end
+    nozzle.xThroat = xThroat;
+    nozzle.throat.A = pi*yThroat^2;
+    nozzle.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
+    nozzle.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
+
+    % Make necessary functions for splined nozzle shape
+    A = @(x) nozzleGeometry(x,'A',pp);
+    dAdx = @(x) nozzleGeometry(x,'dAdx',pp);
+    D = @(x) nozzleGeometry(x,'D',pp);
+    t = @(x) nozzleGeometry(x,'t',pp); % m, thickness of wall
+
+else % if nozzle shape is not a spline
+    A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+    dAdx = @(x) nozzleGeometry(x,'dAdx',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+    D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+    t = @(x) nozzleGeometry(x,'t',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape); % m, thickness of wall
+end
 
 % ======================= DETERMINE NOZZLE FLOW ==========================
 options.Display='none'; % used for fsolve

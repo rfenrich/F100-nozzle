@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 5; % mission number for which certain input parameters are defined below
+mission = 3; % mission number for which certain input parameters are defined below
 hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % Define input parameters that will change based on flight regime:
@@ -40,15 +40,31 @@ elseif(mission == 5) % subsonic flow in nozzle
 end
 
 % Other necessary input parameters
-fluid.gam = 1.4;
-fluid.R = 287.06; % J/kg-K
+fluid.gam = 1.4; % ratio of specific heats
+fluid.R = 287.06; % J/kg-K, specific gas constant
 nozzle.inlet.D = 0.651; % m 
-nozzle.Ainlet2Athroat = 1.368;
-nozzle.Aexit2Athroat = 1.4;
+nozzle.Ainlet2Athroat = 1.368; % area ratio of inlet to throat
+nozzle.Aexit2Athroat = 1.4; % area ratio of exit to throat
 nozzle.length = 1; % m
-nozzle.shape = 'linear';
-nozzle.xThroat = 0.33; % m 
+nozzle.xThroat = 0.33; % m, location of throat from inlet
 nozzle.xExit = nozzle.length;
+nozzle.shape = 'spline'; % options include 'linear' and 'spline'
+if(strcmp(nozzle.shape,'spline'))
+    % To parameterize using a spline, the following must be provided:
+    % nozzle.spline.seed = either a shape already defined in the
+    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
+    % denote the location of the control points with the origin being at
+    % the center of the inlet area
+    % nozzle.spline.nControlPoints = number of control points
+    % nozzle.spline.controlPointSpacing = either 'regular' where control
+    % points will be evenly spaced or a vector giving the x-location
+    % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
+    % 2nd argument is slope of outlet
+    nozzle.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
+    nozzle.spline.nControlPoints = 4;
+    nozzle.spline.controlPointSpacing = 'regular';%[0 nozzle.xThroat nozzle.length];
+    nozzle.spline.slopes = [0, 0];
+end
 
 atm = StndAtm(altitude*0.3048,'SI'); % obtain standard atmosphere characteristics
 freestream.P = atm.P; % Pa, atmospheric pressure
@@ -73,7 +89,12 @@ set(groot,'defaultAxesColorOrder',[0 0 0; 1 0 0; 1 0.25 0; 0 1 0; 0 0 1])
 %set(groot,'defaultAxesLineStyleOrder','-|--|:');
 
 % Useful function which defines diameter of nozzle; for plotting
-D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+if(strcmp(nozzle.shape,'spline'))
+    pp = spline(nozzle.ideal.spline.seed(:,1),[nozzle.ideal.spline.slopes(1); nozzle.ideal.spline.seed(:,2); nozzle.ideal.spline.slopes(2)]); % perform piecewise cubic spline interpolation
+    D = @(x) nozzleGeometry(x,'D',pp);
+else
+    D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
+end
 
 % -------------------- PLOT VARIOUS DATA IN 1 FIGURE ---------------------
 figure

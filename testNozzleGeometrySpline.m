@@ -18,8 +18,8 @@ t = @(x) 0.01; % m, thickness of wall
 
 % Set control points for splines (xNode), value of function at control
 % point (yNode), and slopes at start and end of spline (slopes)
-xNode = 0:0.3:nozzleLength;
-yNode = D(0:0.3:nozzleLength)/2;
+xNode = linspace(0,nozzleLength,50);
+yNode = D(xNode)/2;
 slopes = [0, 0];
 pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
 
@@ -30,7 +30,7 @@ D = @(x) nozzleGeometry(x,'D',pp);
 t = @(x) 0.01; % m, thickness of wall
 
 % Discretize x-axis
-xPosition = linspace(0,nozzleLength,100);
+xPosition = linspace(0,nozzleLength,200);
 
 % Calculate areas based on diameter D, and dAdx
 AfromD = pi*D(xPosition).^2/4;
