@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 3; % mission number for which certain input parameters are defined below
+mission = 5; % mission number for which certain input parameters are defined below
 hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % Define input parameters that will change based on flight regime:
@@ -48,7 +48,7 @@ nozzle.Aexit2Athroat = 1.4; % area ratio of exit to throat
 nozzle.length = 1; % m
 nozzle.xThroat = 0.33; % m, location of throat from inlet
 nozzle.xExit = nozzle.length;
-nozzle.shape = 'spline'; % options include 'linear' and 'spline'
+nozzle.shape = 'linear'; % options include 'linear' and 'spline'
 if(strcmp(nozzle.shape,'spline'))
     % To parameterize using a spline, the following must be provided:
     % nozzle.spline.seed = either a shape already defined in the

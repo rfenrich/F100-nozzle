@@ -255,12 +255,19 @@ while ~converged
         dM2dxPost = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+nozzle.xThroat)./A(x+nozzle.xThroat) + 2*gam*M2*Cf(x+nozzle.xThroat)./D(x+nozzle.xThroat) + (1+gam*M2)*dTstagdx(x+nozzle.xThroat)./(2*Tstag(x+nozzle.xThroat)));
         dM2dxPrior = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.xThroat-x)./A(nozzle.xThroat-x) + 2*gam*M2*Cf(nozzle.xThroat-x)./D(nozzle.xThroat-x) + (1+gam*M2)*dTstagdx(nozzle.xThroat-x)./(2*Tstag(nozzle.xThroat-x)));
 
+        % Estimate dMdx in order to better smooth the transition b/w
+        % subsonic and supersonic flow.
+        dMdxCoeff = -dAdx(nozzle.xThroat)./A(nozzle.xThroat) + 2*gam*Cf(nozzle.xThroat)./D(nozzle.xThroat) + (1+gam)*dTstagdx(nozzle.xThroat)./(2*Tstag(nozzle.xThroat));
+        dMdx = -600*dMdxCoeff; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
+        UpperM = 1.01; % start integration at this Mach number for aft portion of nozzle
+        LowerM = 0.99; % start integration at this Mach number for fore portion of nozzle
+        
         % ODE solver options
         options.RelTol = 1e-4;
         options.AbsTol = 1e-4;
         % Solve using 4th-order Runge-Kutta method
-        [xPositionPost,M2Post] = ode45(dM2dxPost,[0.001 nozzle.xExit - nozzle.xThroat],1.005,options);
-        [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0.001 nozzle.xThroat],0.999,options);
+        [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.xExit - nozzle.xThroat],UpperM,options);
+        [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.xThroat],LowerM,options);
 
         % Combine both parts of problem
         M2 = [flipud(M2Prior); M2Post]; % contains Mach^2
