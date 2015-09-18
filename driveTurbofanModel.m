@@ -18,7 +18,6 @@ control.bypassRatio = 0;
 control.f = 0;
 control.fan.PstagRatio = 0;
 control.fan.efficiency.polytropic = 0;
-control.fan.exit.M = 0;
 control.compressor.efficiency.polytropic = 0;
 control.compressor.overallPressureRatio = 0;
 control.burner.PstagRatio = 0;
@@ -33,7 +32,6 @@ control.nozzle.Aexit2Athroat = 0;
 
 control.nozzle.Ainlet2Athroat = 1.368;
 control.nozzle.Aexit2Athroat = 1.4;
-control.fan.exit.M = 0.8;
 
 % ----------------------- RUN SIMPLE TEST CASE ---------------------------
 tic

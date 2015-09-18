@@ -322,7 +322,10 @@ while ~converged
     CfIncomp = 0.074./Re(xPosition).^0.2;
     flow.Cf = CfIncomp./TPrimeRatio./RePrimeRatio.^0.2;
     Cf = @(x) interp1(xPosition,flow.Cf,x,'linear');
-
+    
+    % =========== ESTIMATE ACCURACY OF CRITICAL FLOW LOCATION ================
+    % This is still yet to be implemented, if it is at all important.
+    
     if counter >= maxIterations
         fprintf('! Max iterations reached for non-ideal nozzle heat transfer & friction.\n');
         break;

@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 5; % mission number for which certain input parameters are defined below
+mission = 3; % mission number for which certain input parameters are defined below
 hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % Define input parameters that will change based on flight regime:
