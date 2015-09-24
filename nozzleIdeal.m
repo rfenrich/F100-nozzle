@@ -170,16 +170,12 @@ if (strcmp(nozzle.status,'subsonic')) % subsonic flow throughout nozzle
     M2 = flipud(M2);
 elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
     
-    % Estimate dMdx in order to better smooth the transition b/w
-    % subsonic and supersonic flow.
-    dMdxCoeff = -dAdx(nozzle.xThroat)./A(nozzle.xThroat);
-    dMdx = -600*dMdxCoeff; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
-    UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
-    LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
+    UpperM = 1.000001; % start integration at this Mach number for aft portion of nozzle
+    LowerM = 0.999999; % start integration at this Mach number for fore portion of nozzle
     
     % Solve using 4th-order Runge-Kutta method
-    [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.xExit - nozzle.xThroat],UpperM,options);
-    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.xThroat],LowerM,options);
+    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 nozzle.xExit-nozzle.xThroat],UpperM,options);
+    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.xThroat],LowerM,options);
     
     % Combine both parts of problem
     M2 = [flipud(M2Prior); M2Post]; % contains Mach^2
@@ -187,18 +183,14 @@ elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
 else % sub and supersonic flow, shock in nozzle
     dM2dxPostShock = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+shock.x)./A(x+shock.x));
     
-    % Estimate dMdx in order to better smooth the transition b/w
-    % subsonic and supersonic flow.
-    dMdxCoeff = -dAdx(nozzle.xThroat)./A(nozzle.xThroat);
-    dMdx = -600*dMdxCoeff; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
-    UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
-    LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
+    UpperM = 1.000001; % start integration at this Mach number for aft portion of nozzle
+    LowerM = 0.999999; % start integration at this Mach number for fore portion of nozzle
     
-    [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx shock.x - nozzle.xThroat],UpperM,options);
+    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 shock.x - nozzle.xThroat],UpperM,options);
     MbehindShock = sqrt((1 + (gam-1)*shock.M^2/2)/(gam*shock.M^2 - (gam-1)/2));
     shock.PtRatio = nozzle.PstagRatio;
     [xPositionPostShock,M2PostShock] = ode45(dM2dxPostShock,[1e-8 nozzle.xExit-shock.x],MbehindShock^2,options);
-    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.xThroat],LowerM,options);
+    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.xThroat],LowerM,options);
     
     % Combine both parts of problem
     M2 = [flipud(M2Prior); M2Post; M2PostShock]; % contains Mach^2

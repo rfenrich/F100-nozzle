@@ -263,7 +263,7 @@ while (abs(errorNozzleInletMach) > tolerance)
             % Calculate turbine exit Mach number using mass conservation
             [turbine.exit.M, ~, exitflag] = fzero( @(x) AreaMachFunc(gam,fan.exit.M) - bypassRatio*sqrt(fan.exit.Tstag/turbine.exit.Tstag)*(turbine.exit.Pstag/fan.exit.Pstag)*(1/nozzle.inlet.Abypass2Acore)*AreaMachFunc(gam,x),0.5,options);
                 if (exitflag ~= 1)
-                    fprintf('! fsolve calculated wrong turbine.exit.M, lowering fan.exit.M\n');
+                    %fprintf('! fzero calculated wrong turbine.exit.M, lowering fan.exit.M\n');
                     fan.exit.M = fan.exit.M - 0.1; % lower the fan exit Mach
                 else
                     incorrect = 0;
@@ -312,6 +312,7 @@ while (abs(errorNozzleInletMach) > tolerance)
 
     % Set new nozzle inlet Mach number
     nozzle.inlet.M = nozzleFlow.M(1);
+    options = optimset('TolFun',1e-6);
     ftemp = fsolve(@FanTurbineExitMachFunc,[fan.exit.M, turbine.exit.M],options);
     fan.exit.M = ftemp(1);
     turbine.exit.M = ftemp(2);

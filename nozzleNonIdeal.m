@@ -49,6 +49,8 @@ if(~exist('nozzle.exit.A','var'))
     nozzle.exit.A = nozzle.Aexit2Athroat*nozzle.inlet.A/nozzle.Ainlet2Athroat;
 end
 
+nozzle.xApparentThroat = nozzle.xThroat; % initialize apparent throat location
+
 % Calculate pressure ratio which determines state of nozzle:
 pressureRatio = inlet.Pstag/freestream.P;
 
@@ -251,27 +253,38 @@ while ~converged
         
     else % Supersonic flow present in nozzle
         
-        % Split problem into before and after nozzle throat, solve for d(M^2)/dx
-        dM2dxPost = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+nozzle.xThroat)./A(x+nozzle.xThroat) + 2*gam*M2*Cf(x+nozzle.xThroat)./D(x+nozzle.xThroat) + (1+gam*M2)*dTstagdx(x+nozzle.xThroat)./(2*Tstag(x+nozzle.xThroat)));
-        dM2dxPrior = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.xThroat-x)./A(nozzle.xThroat-x) + 2*gam*M2*Cf(nozzle.xThroat-x)./D(nozzle.xThroat-x) + (1+gam*M2)*dTstagdx(nozzle.xThroat-x)./(2*Tstag(nozzle.xThroat-x)));
-
         % Estimate dMdx in order to better smooth the transition b/w
         % subsonic and supersonic flow.
         dMdxCoeff = -dAdx(nozzle.xThroat)./A(nozzle.xThroat) + 2*gam*Cf(nozzle.xThroat)./D(nozzle.xThroat) + (1+gam)*dTstagdx(nozzle.xThroat)./(2*Tstag(nozzle.xThroat));
-        dMdx = -600*dMdxCoeff; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
-        UpperM = 1.01; % start integration at this Mach number for aft portion of nozzle
-        LowerM = 0.99; % start integration at this Mach number for fore portion of nozzle
+        if(dMdxCoeff < 0)
+            dMdxCoeff = -dMdxCoeff;
+        end
+        
+        % Solve for location where dMdx = 0 (location of apparent throat)
+        dMdxCoeffFunc = @(x) -dAdx(x)./A(x) + 2*gam*Cf(x)./D(x) + (1+gam)*dTstagdx(x)./(2*Tstag(x));
+        options2 = optimset('TolFun',1e-6);
+        nozzle.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.xThroat,options2);
+        
+        % Split problem into before and after nozzle throat, solve for d(M^2)/dx
+        dM2dxPost = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+nozzle.xApparentThroat)./A(x+nozzle.xApparentThroat) + 2*gam*M2*Cf(x+nozzle.xApparentThroat)./D(x+nozzle.xApparentThroat) + (1+gam*M2)*dTstagdx(x+nozzle.xApparentThroat)./(2*Tstag(x+nozzle.xApparentThroat)));
+        dM2dxPrior = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.xApparentThroat-x)./A(nozzle.xApparentThroat-x) + 2*gam*M2*Cf(nozzle.xApparentThroat-x)./D(nozzle.xApparentThroat-x) + (1+gam*M2)*dTstagdx(nozzle.xApparentThroat-x)./(2*Tstag(nozzle.xApparentThroat-x)));
+        
+        % Make a heuristic estimate of dMdx at apparent throat
+        dMdx = 600*dMdxCoeff/4; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
+        UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
+        LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
+        fprintf('dMdx: %f\n',dMdx);
         
         % ODE solver options
         options.RelTol = 1e-4;
         options.AbsTol = 1e-4;
         % Solve using 4th-order Runge-Kutta method
-        [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.xExit - nozzle.xThroat],UpperM,options);
-        [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.xThroat],LowerM,options);
-
+        [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.xExit - nozzle.xApparentThroat],UpperM.^2,options);
+        [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.xApparentThroat],LowerM.^2,options);
+        
         % Combine both parts of problem
         M2 = [flipud(M2Prior); M2Post]; % contains Mach^2
-        xPosition = [-flipud(xPositionPrior)+nozzle.xThroat; xPositionPost + nozzle.xThroat];
+        xPosition = [-flipud(xPositionPrior)+nozzle.xApparentThroat; xPositionPost + nozzle.xApparentThroat];
     
     end
     

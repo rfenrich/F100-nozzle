@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 3; % mission number for which certain input parameters are defined below
+mission = 1; % mission number for which certain input parameters are defined below
 hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % Define input parameters that will change based on flight regime:
@@ -26,12 +26,12 @@ elseif(mission == 3) % high speed, high altitude case
     altitude = 35000;
     mach = 0.9;
     nozzle.inlet.Tstag = 1021.5;
-    nozzle.inlet.Pstag = 1.4492e5;
+    nozzle.inlet.Pstag = 1.44925e5;%1.4492e5;
 elseif(mission == 4) % case with shock in nozzle
     altitude = 0;
     mach = 0.0;
     nozzle.inlet.Tstag = 900;
-    nozzle.inlet.Pstag = 1.2e5;
+    nozzle.inlet.Pstag = 1.3e5;
 elseif(mission == 5) % subsonic flow in nozzle
     altitude = 0;
     mach = 0.0;
@@ -48,7 +48,7 @@ nozzle.Aexit2Athroat = 1.4; % area ratio of exit to throat
 nozzle.length = 1; % m
 nozzle.xThroat = 0.33; % m, location of throat from inlet
 nozzle.xExit = nozzle.length;
-nozzle.shape = 'linear'; % options include 'linear' and 'spline'
+nozzle.shape = 'spline'; % options include 'linear' and 'spline'
 if(strcmp(nozzle.shape,'spline'))
     % To parameterize using a spline, the following must be provided:
     % nozzle.spline.seed = either a shape already defined in the
@@ -61,8 +61,8 @@ if(strcmp(nozzle.shape,'spline'))
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
     nozzle.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
-    nozzle.spline.nControlPoints = 4;
-    nozzle.spline.controlPointSpacing = 'regular';%[0 nozzle.xThroat nozzle.length];
+    nozzle.spline.nControlPoints = 3;
+    nozzle.spline.controlPointSpacing = 'regular'; %[0 nozzle.xThroat nozzle.length];
     nozzle.spline.slopes = [0, 0];
 end
 
@@ -140,86 +140,86 @@ plot(xPosition,flow.nonideal.density)
 title('Density (kg/m^3)')
 legend('ideal');
 
-% ------------------------ PLOT NOZZLE GEOMETRY --------------------------
-figure; hold on
-plot(xPosition,D(xPosition)/2)
-plot(xPosition,-D(xPosition)/2)
-xlabel('Axial position (m)')
-title('Geometry')
-axis equal
-
-% ------------------------ PLOT REYNOLDS NUMBER --------------------------
-figure; hold on
-plot(xPositionIdeal,flow.ideal.Re);
-plot(xPosition,flow.nonideal.Re)
-xlabel('Axial position (m)')
-title('Re')
-legend2 = legend('ideal');
-
-% ------------------------- PLOT MACH GEOMETRY ---------------------------
-figure; hold on
-plot(xPositionIdeal,flow.ideal.M)
-plot(xPosition,flow.nonideal.M)
-xlabel('Axial position (m)')
-title('Mach Number')
-legend3 = legend('ideal');
-
-% --------------------------- PLOT PRESSURES -----------------------------
-figure; hold on
-plot(xPositionIdeal,flow.ideal.P)
-plot(xPosition,flow.nonideal.P)
-plot(xPositionIdeal,flow.ideal.Pstag)
-plot(xPosition,flow.nonideal.Pstag)
-plot(xPosition,freestream.P*ones(length(xPosition),1))
-xlabel('Axial position (m)')
-title('Pressure (Pa)')
-legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
-
-% ------------------------- PLOT TEMPERATURES ----------------------------
-figure; hold on
-hold on
-plot(xPositionIdeal,flow.ideal.T)
-plot(xPosition,flow.nonideal.T)
-plot(xPositionIdeal,flow.ideal.Tstag)
-plot(xPosition,flow.nonideal.Tstag)
-plot(xPosition,freestream.T*ones(length(xPosition),1))
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Temperature (K)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
-legend5 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
-set(legend5,'FontName','CMU Serif','FontSize',12)
-
-% ---------------------------- PLOT DENSITY ------------------------------
-figure; hold on
-plot(xPositionIdeal,flow.ideal.density)
-plot(xPosition,flow.nonideal.density)
-xlabel('Axial position (m)')
-title('Density (kg/m^3)')
-legend6 = legend('ideal');
-
-% --------------------------- PLOT h_f & C_f -----------------------------
-figure
-subplot(1,2,1); hold on
-plot(xPosition,flow.nonideal.hf)
-xlabel('Axial position (m)')
-title('Wall convection coefficient h_f (W/m^2-K)')
-subplot(1,2,2); hold on
-plot(xPosition,flow.nonideal.Cf)
-xlabel('Axial position (m)')
-title('Friction coefficient C_f')
-
-% --------------------- PLOT TEMPERATURE PROFILES ------------------------
-figure
-hold on
-plot(xPosition,flow.nonideal.T)
-plot(xPosition,flow.nonideal.Tstag)
-plot(xPosition,nozzle.nonideal.Tw)
-plot(xPosition,nozzle.nonideal.Text)
-plot(xPosition,freestream.T*ones(length(flow.nonideal.T)))
-title('Temperature profiles')
-xlabel('Axial position (m)')
-ylabel('Temperature (K)')
-legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
+% % ------------------------ PLOT NOZZLE GEOMETRY --------------------------
+% figure; hold on
+% plot(xPosition,D(xPosition)/2)
+% plot(xPosition,-D(xPosition)/2)
+% xlabel('Axial position (m)')
+% title('Geometry')
+% axis equal
+% 
+% % ------------------------ PLOT REYNOLDS NUMBER --------------------------
+% figure; hold on
+% plot(xPositionIdeal,flow.ideal.Re);
+% plot(xPosition,flow.nonideal.Re)
+% xlabel('Axial position (m)')
+% title('Re')
+% legend2 = legend('ideal');
+% 
+% % ------------------------- PLOT MACH GEOMETRY ---------------------------
+% figure; hold on
+% plot(xPositionIdeal,flow.ideal.M)
+% plot(xPosition,flow.nonideal.M)
+% xlabel('Axial position (m)')
+% title('Mach Number')
+% legend3 = legend('ideal');
+% 
+% % --------------------------- PLOT PRESSURES -----------------------------
+% figure; hold on
+% plot(xPositionIdeal,flow.ideal.P)
+% plot(xPosition,flow.nonideal.P)
+% plot(xPositionIdeal,flow.ideal.Pstag)
+% plot(xPosition,flow.nonideal.Pstag)
+% plot(xPosition,freestream.P*ones(length(xPosition),1))
+% xlabel('Axial position (m)')
+% title('Pressure (Pa)')
+% legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
+% 
+% % ------------------------- PLOT TEMPERATURES ----------------------------
+% figure; hold on
+% hold on
+% plot(xPositionIdeal,flow.ideal.T)
+% plot(xPosition,flow.nonideal.T)
+% plot(xPositionIdeal,flow.ideal.Tstag)
+% plot(xPosition,flow.nonideal.Tstag)
+% plot(xPosition,freestream.T*ones(length(xPosition),1))
+% xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
+% title('Temperature (K)','FontName','CMU Serif','FontSize',16)
+% set(gca,'FontName','CMU Serif','FontSize',14)
+% legend5 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
+% set(legend5,'FontName','CMU Serif','FontSize',12)
+% 
+% % ---------------------------- PLOT DENSITY ------------------------------
+% figure; hold on
+% plot(xPositionIdeal,flow.ideal.density)
+% plot(xPosition,flow.nonideal.density)
+% xlabel('Axial position (m)')
+% title('Density (kg/m^3)')
+% legend6 = legend('ideal');
+% 
+% % --------------------------- PLOT h_f & C_f -----------------------------
+% figure
+% subplot(1,2,1); hold on
+% plot(xPosition,flow.nonideal.hf)
+% xlabel('Axial position (m)')
+% title('Wall convection coefficient h_f (W/m^2-K)')
+% subplot(1,2,2); hold on
+% plot(xPosition,flow.nonideal.Cf)
+% xlabel('Axial position (m)')
+% title('Friction coefficient C_f')
+% 
+% % --------------------- PLOT TEMPERATURE PROFILES ------------------------
+% figure
+% hold on
+% plot(xPosition,flow.nonideal.T)
+% plot(xPosition,flow.nonideal.Tstag)
+% plot(xPosition,nozzle.nonideal.Tw)
+% plot(xPosition,nozzle.nonideal.Text)
+% plot(xPosition,freestream.T*ones(length(flow.nonideal.T)))
+% title('Temperature profiles')
+% xlabel('Axial position (m)')
+% ylabel('Temperature (K)')
+% legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
 
 % format plots to look nice
 formatPlot;
