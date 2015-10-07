@@ -1,4 +1,4 @@
-function [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control )
+function [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control, error )
 % Calculate performance for F100-PW-220 turbofan engine w/o afterburning.
 %
 % INPUTS:
@@ -14,7 +14,7 @@ function [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, ma
 % thermal efficiency of engine
 % engine = structure with nozzle parameters
 %
-% Rick Fenrich 7/31/15
+% Rick Fenrich 7/31/15 adapted 9/24/15 for error sensitivity study
 
 options.Display='none'; % used for Matlab's fzero
 
@@ -244,9 +244,10 @@ turbine.exit.Tstag = turbine.inlet.Tstag*turbine.TstagRatio;
 turbine.efficiency.isentropic = (turbine.PstagRatio^((gam-1)*turbine.efficiency.polytropic/gam) - 1)/(turbine.PstagRatio^((gam-1)/gam) - 1);
 
 % ------------------------------ MIXING ----------------------------------
-tolerance = 1e-6; % tolerance for error in nozzle inlet Mach number
+%tolerance = 1e-10; % tolerance for error in nozzle inlet Mach number
+tolerance = error.betweenIterations.inletMach;
 errorNozzleInletMach = 1;
-iterationLimit = 3;
+iterationLimit = 10;
 counter = 0;
 
 while (abs(errorNozzleInletMach) > tolerance)
@@ -306,13 +307,14 @@ while (abs(errorNozzleInletMach) > tolerance)
 
     %[ nozzleFlow, nozzle, xPosition ] = nozzleIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle);
     %nozzle.PstagRatio = 0.97;
-    [ nozzleFlow, nozzle, xPosition ] = nozzleNonIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle,400);
-    errorNozzleInletMach = nozzleFlow.M(1) - nozzle.inlet.M;
-    fprintf('Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
+    [ nozzleFlow, nozzle, xPosition ] = nozzleNonIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle, 400, error);
+    errorNozzleInletMach = (nozzleFlow.M(1) - nozzle.inlet.M)/nozzleFlow.M(1);
+    fprintf('% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
 
     % Set new nozzle inlet Mach number
     nozzle.inlet.M = nozzleFlow.M(1);
-    options = optimset('TolFun',1e-6);
+    %options = optimset('TolFun',1e-8,'Display','none');
+    options = optimset('TolFun',error.solver.inletMach,'Display','none');
     ftemp = fsolve(@FanTurbineExitMachFunc,[fan.exit.M, turbine.exit.M],options);
     fan.exit.M = ftemp(1);
     turbine.exit.M = ftemp(2);

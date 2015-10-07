@@ -1,4 +1,4 @@
-function [ flow, nozzle, xPosition ] = nozzleNonIdeal( fluid, inlet, freestream, nozzle, hInf)
+function [ flow, nozzle, xPosition ] = nozzleNonIdeal( fluid, inlet, freestream, nozzle, hInf, error)
 % Solve for flow along length of non-ideal nozzle given geometry, inlet
 % stagnation temperature and pressure, and freestream temperature and
 % pressure. Iterate for Cf and stagnation temperature. An ODE for M^2 is 
@@ -188,7 +188,8 @@ Cf = @(x) 0.002;
 converged = false;
 maxIterations = 10; % max number of iterations to solve for Cf and Tstag
 counter = 0; % used to count number of iterations
-tolerance = 0.001; % tolerance for percent error in exit static temperature between iterations
+%tolerance = 1e-6; % tolerance for percent error in exit static temperature between iterations
+tolerance = error.betweenIterations.exitTemp;
 Texit_old = 0; % saves previous exit static temperature
 
 while ~converged
@@ -262,7 +263,8 @@ while ~converged
         
         % Solve for location where dMdx = 0 (location of apparent throat)
         dMdxCoeffFunc = @(x) -dAdx(x)./A(x) + 2*gam*Cf(x)./D(x) + (1+gam)*dTstagdx(x)./(2*Tstag(x));
-        options2 = optimset('TolFun',1e-6);
+        %options2 = optimset('TolFun',1e-6);
+        options2 = optimset('TolFun',error.solver.apparentThroatLocation);
         nozzle.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.xThroat,options2);
         
         % Split problem into before and after nozzle throat, solve for d(M^2)/dx
@@ -270,14 +272,17 @@ while ~converged
         dM2dxPrior = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.xApparentThroat-x)./A(nozzle.xApparentThroat-x) + 2*gam*M2*Cf(nozzle.xApparentThroat-x)./D(nozzle.xApparentThroat-x) + (1+gam*M2)*dTstagdx(nozzle.xApparentThroat-x)./(2*Tstag(nozzle.xApparentThroat-x)));
         
         % Make a heuristic estimate of dMdx at apparent throat
-        dMdx = 600*dMdxCoeff/4; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
+        %dMdx = 600*dMdxCoeff/4; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
+        dMdx = 600*dMdxCoeff/error.dMdxDenominator; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
         UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
         LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
         fprintf('dMdx: %f\n',dMdx);
         
         % ODE solver options
-        options.RelTol = 1e-4;
-        options.AbsTol = 1e-4;
+        %options.RelTol = 1e-4;
+        %options.AbsTol = 1e-4;
+        options.RelTol = error.solver.M2relative;
+        options.AbsTol = error.solver.M2absolute;
         % Solve using 4th-order Runge-Kutta method
         [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.xExit - nozzle.xApparentThroat],UpperM.^2,options);
         [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.xApparentThroat],LowerM.^2,options);

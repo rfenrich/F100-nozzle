@@ -6,8 +6,17 @@
 
 % =========================== SET INPUTS =================================
 
-altitude = 35000; % in feet
-mach = 0.9;
+altitude = 0; % in feet
+mach = 0;
+
+% =================== SET ERROR TOLERANCE RANGES =========================
+error.betweenIterations.inletMach = 1e-10;
+error.solver.inletMach = 1e-8;
+error.betweenIterations.exitTemp = 1e-6;
+error.solver.apparentThroatLocation = 1e-6;
+error.solver.M2relative = 1e-10;
+error.solver.M2absolute = 1e-10;
+error.dMdxDenominator = 4;
 
 % ======================= INITIALIZE CONTROLS ============================
 % If a control is set to zero then turbofanF100.m will
@@ -35,7 +44,7 @@ control.nozzle.Aexit2Athroat = 1.4;
 
 % ----------------------- RUN SIMPLE TEST CASE ---------------------------
 tic
-[ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control );
+[ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control, error );
 toc
 fprintf('\n')
 fprintf('thrust: %f N\n',thrust.total);
@@ -43,3 +52,5 @@ fprintf('sfc: %f lb/lbf/hr\n',sfc);
 fprintf('mass flow rate: %f kg/s\n',engine.nozzle.massFlowRate);
 fprintf('thermal efficiency: %f\n',thermalEfficiency);
 fprintf('nozzle is: %s\n',engine.nozzle.status);
+fprintf('nozzle Pstag ratio: %f\n',engine.nozzle.PstagRatio);
+fprintf('nozzle Tstag ratio: %f\n',engine.nozzle.TstagRatio);
