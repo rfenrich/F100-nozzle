@@ -1,0 +1,32 @@
+# Dakota Input File: TurbofanParamStudy.in
+# Usage:
+#   dakota -i TurbofanParamStudy.in -o ./dakota/TurbofanParamStudy.out > ./dakota/TurbofanParamStudy.stdout
+
+environment
+  graphics
+  tabular_data
+    tabular_data_file = './dakota/TurbofanParamStudy.dat'
+
+method
+  multidim_parameter_study
+    partitions = 8 8
+
+model
+  single
+
+variables
+  continuous_design = 2
+    lower_bounds      0.0      0.0
+    upper_bounds      40000.0  0.95
+    descriptors       'alt'    "mach"
+
+interface
+  analysis_driver = 'matlab -nojvm -nodisplay -nosplash < dakotaInterfaceTurbofanModel.m'
+    fork
+    parameters_file = 'params.in'
+    results_file    = 'results.out'
+
+responses
+  response_functions = 1
+  no_gradients
+  no_hessians
