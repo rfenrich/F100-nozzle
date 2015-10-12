@@ -7,7 +7,7 @@
 % =========================== SET INPUTS =================================
 
 altitude = 35000; % in feet
-mach = 0.9;
+mach = 0.65;
 
 % ======================= INITIALIZE CONTROLS ============================
 % If a control is set to zero then turbofanF100.m will
