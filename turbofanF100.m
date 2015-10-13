@@ -309,7 +309,7 @@ while (abs(errorNozzleInletMach) > tolerance)
     %nozzle.PstagRatio = 0.97;
     [ nozzleFlow, nozzle, xPosition ] = nozzleNonIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle, 400, error);
     errorNozzleInletMach = (nozzleFlow.M(1) - nozzle.inlet.M)/nozzleFlow.M(1);
-    fprintf('% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
+    fprintf('%% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
 
     % Set new nozzle inlet Mach number
     nozzle.inlet.M = nozzleFlow.M(1);

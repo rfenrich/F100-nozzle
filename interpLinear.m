@@ -3,7 +3,7 @@ function [ y ] = interpLinear( xVec, yVec, x )
 %
 % Rick Fenrich 10/6/15
 
-y = zeros(length(x));
+y = zeros(length(x),1);
 
 for ii = 1:length(x)
 
@@ -12,9 +12,13 @@ for ii = 1:length(x)
     x1 = xVec(ind1(1));
     x2 = xVec(ind2(1));
     y1 = yVec(ind1(1));
-    y2 = yVec(ind2(1));
-
-    y(ii) = (x(ii)-x1)*(y2-y1)/(x2-x1) + y1;
+    
+    if(x1 == x2)
+        y(ii) = y1;
+    else
+        y2 = yVec(ind2(1));
+        y(ii) = (x(ii)-x1)*(y2-y1)/(x2-x1) + y1;
+    end
     
 end
 

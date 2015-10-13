@@ -185,8 +185,8 @@ dTstagdx = @(x) 0*x;
 Tstag = @(x) inlet.Tstag;
 Cf = @(x) 0.002;
 
-xPositionOld = [0 nozzle.xExit];
-flow.Tstag = [inlet.Tstag inlet.Tstag];
+xPositionOld = [0; nozzle.xExit];
+flow.Tstag = [inlet.Tstag; inlet.Tstag];
 
 converged = false;
 maxIterations = 10; % max number of iterations to solve for Cf and Tstag
@@ -268,6 +268,7 @@ while ~converged
         dMdxCoeffFunc = @(x) -dAdx(x)./A(x) + 2*gam*Cf(x)./D(x) + (1+gam)*dTstagdx(x)./(2*Tstag(x));
         %options2 = optimset('TolFun',1e-6);
         options2 = optimset('TolFun',error.solver.apparentThroatLocation);
+        dMdxCoeffFunc(nozzle.xThroat);
         nozzle.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.xThroat,options2);
         
         % Split problem into before and after nozzle throat, solve for d(M^2)/dx
@@ -306,6 +307,7 @@ while ~converged
     flow.M = sqrt(M2); % Mach number
     %flow.Tstag = Tstag(xPosition);
     flow.Tstag = interpLinear(xPositionOld,flow.Tstag,xPosition);
+    %flow.Tstag = interp1(xPositionOld,flow.Tstag,xPosition,'linear');
     flow.T = flow.Tstag./(1 + (gam-1)*M2/2); % static temperature from stag. temp. definition
     flow.Pstag = inlet.Pstag*(A(0)./A(xPosition)).*(AreaMachFunc(gam,flow.M(1))./AreaMachFunc(gam,flow.M)).*sqrt(flow.Tstag/flow.Tstag(1)); % stagnation pressure from mass conservation
     flow.P = flow.Pstag./(1 + (gam-1)*M2/2).^(gam/(gam-1)); % static pressure from stag. press. definition
@@ -318,6 +320,7 @@ while ~converged
     % Heat transfer
     %T = @(x) interp1(xPosition,flow.T,x,'linear');
     T = @(x) interpLinear(xPosition,flow.T,x);
+    %T = @(x) interp1(xPosition,flow.T,x,'linear');
     %Re = @(x) interp1(xPosition,flow.Re,x,'linear');
     %Re = @(x) interpLinear(xPosition,flow.Re,x);
     flow.hf = Pr(flow.T).^(2/3)*flow.density.*Cp(flow.T).*flow.U.*Cf(xPosition)/2; % heat transfer coefficient to interior nozzle wall
@@ -331,10 +334,12 @@ while ~converged
     flow.Tstag = freestream.T*(1 - exp(-TstagXIntegral)) + inlet.Tstag*exp(-TstagXIntegral);
     %Tstag = @(x) interp1(xPosition,flow.Tstag,x,'linear');
     Tstag = @(x) interpLinear(xPosition,flow.Tstag,x);
+    %Tstag = @(x) interp1(xPosition,flow.Tstag,x,'linear');
     %dTstagdxVal = (freestream.T - flow.Tstag)*4./(Cp(T(xPosition)).*flow.density.*flow.U.*D(xPosition).*(1./hf(xPosition) + t(xPosition)/kw + 1/hInf));
     dTstagdxVal = (freestream.T - flow.Tstag)*4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/kw + 1/hInf));
     %dTstagdx = @(x) interp1(xPosition,dTstagdxVal,x,'linear');
     dTstagdx = @(x) interpLinear(xPosition,dTstagdxVal,x);
+    %dTstagdx = @(x) interp1(xPosition,dTstagdxVal,x,'linear');
     
     % Estimate interior wall temperature
     %Qw = Cp(T(xPosition)).*flow.density.*flow.U.*D(xPosition).*dTstagdx(xPosition)/4;
