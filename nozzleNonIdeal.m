@@ -121,18 +121,18 @@ end
 % ========================= THERMAL PROPERTIES ===========================
 % Uncomment the following if you want Pr, conductivity k, and Cp to change
 % with temperature:
-% air.temp = [175 200 225 250 275 300 325 350 375 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1500];
-% air.Pr = [0.744 0.736 0.728 0.72 0.713 0.707 0.701 0.697 0.692 0.688 0.684 0.68 0.68 0.68 0.682 0.684 0.687 0.69 0.693 0.696 0.699 0.702 0.704 0.707 0.709 0.711 0.713 0.715 0.717 0.719 0.722];
-% air.k = 0.01*[1.593 1.809 2.02 2.227 2.428 2.624 2.816 3.003 3.186 3.365 3.71 4.041 4.357 4.661 4.954 5.236 5.509 5.774 6.03 6.276 6.52 6.754 6.985 7.209 7.427 7.64 7.849 8.054 8.253 8.45 8.831];
-% air.Cp = [1002.3 1002.5 1002.7 1003.1 1003.8 1004.9 1006.3 1008.2 1010.6 1013.5 1020.6 1029.5 1039.8 1051.1 1062.9 1075.0 1087.0 1098.7 1110.1 1120.9 1131.3 1141.1 1150.2 1158.9 1167.0 1174.6 1181.7 1188.4 1194.6 1200.5 1211.2];
-% Pr = @(T) interp1(air.temp,air.Pr,T,'linear','extrap'); % Prandtl number of air
-% kf = @(T) interp1(air.temp,air.k,T,'linear','extrap'); % thermal conductivity of air
-% Cp = @(T) interp1(air.temp,air.Cp,T,'linear','extrap'); % specific heat of air
+air.temp = [175 200 225 250 275 300 325 350 375 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1500];
+air.Pr = [0.744 0.736 0.728 0.72 0.713 0.707 0.701 0.697 0.692 0.688 0.684 0.68 0.68 0.68 0.682 0.684 0.687 0.69 0.693 0.696 0.699 0.702 0.704 0.707 0.709 0.711 0.713 0.715 0.717 0.719 0.722];
+air.k = 0.01*[1.593 1.809 2.02 2.227 2.428 2.624 2.816 3.003 3.186 3.365 3.71 4.041 4.357 4.661 4.954 5.236 5.509 5.774 6.03 6.276 6.52 6.754 6.985 7.209 7.427 7.64 7.849 8.054 8.253 8.45 8.831];
+air.Cp = [1002.3 1002.5 1002.7 1003.1 1003.8 1004.9 1006.3 1008.2 1010.6 1013.5 1020.6 1029.5 1039.8 1051.1 1062.9 1075.0 1087.0 1098.7 1110.1 1120.9 1131.3 1141.1 1150.2 1158.9 1167.0 1174.6 1181.7 1188.4 1194.6 1200.5 1211.2];
+Pr = @(T) interpLinear(air.temp,air.Pr,T); % Prandtl number of air
+kf = @(T) interpLinear(air.temp,air.k,T); % thermal conductivity of air
+Cp = @(T) interpLinear(air.temp,air.Cp,T); % specific heat of air
 
 % Assume average values for Pr, thermal conductivity k, and Cp:
-Pr = @(T) 0.7;
-k = @(T) 0.037;
-Cp = @(T) 1035;
+%Pr = @(T) 0.7;
+%kf = @(T) 0.037;
+%Cp = @(T) 1035;
 
 kw = 30; % W/m*K, thermal conductivity of nozzle wall
 
@@ -191,8 +191,7 @@ flow.Tstag = [inlet.Tstag; inlet.Tstag];
 converged = false;
 maxIterations = 10; % max number of iterations to solve for Cf and Tstag
 counter = 0; % used to count number of iterations
-%tolerance = 1e-6; % tolerance for percent error in exit static temperature between iterations
-tolerance = error.betweenIterations.exitTemp;
+tolerance = error.betweenIterations.exitTemp; % tolerance for percent error in exit static temperature between iterations
 Texit_old = 0; % saves previous exit static temperature
 
 while ~converged
@@ -266,7 +265,6 @@ while ~converged
         
         % Solve for location where dMdx = 0 (location of apparent throat)
         dMdxCoeffFunc = @(x) -dAdx(x)./A(x) + 2*gam*Cf(x)./D(x) + (1+gam)*dTstagdx(x)./(2*Tstag(x));
-        %options2 = optimset('TolFun',1e-6);
         options2 = optimset('TolFun',error.solver.apparentThroatLocation);
         dMdxCoeffFunc(nozzle.xThroat);
         nozzle.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.xThroat,options2);
@@ -276,15 +274,12 @@ while ~converged
         dM2dxPrior = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.xApparentThroat-x)./A(nozzle.xApparentThroat-x) + 2*gam*M2*Cf(nozzle.xApparentThroat-x)./D(nozzle.xApparentThroat-x) + (1+gam*M2)*dTstagdx(nozzle.xApparentThroat-x)./(2*Tstag(nozzle.xApparentThroat-x)));
         
         % Make a heuristic estimate of dMdx at apparent throat
-        %dMdx = 600*dMdxCoeff/4; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
         dMdx = 600*dMdxCoeff/error.dMdxDenominator; % 600 corresponds dMdx for linear interpolation between M = 0.999 and M = 1.001
         UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
         LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
-        fprintf('dMdx: %f\n',dMdx);
+        %fprintf('dMdx: %f\n',dMdx);
         
         % ODE solver options
-        %options.RelTol = 1e-4;
-        %options.AbsTol = 1e-4;
         options.RelTol = error.solver.M2relative;
         options.AbsTol = error.solver.M2absolute;
         % Solve using 4th-order Runge-Kutta method
@@ -305,7 +300,6 @@ while ~converged
     % ======================= CALC OTHER PROPERTIES ==========================
 
     flow.M = sqrt(M2); % Mach number
-    %flow.Tstag = Tstag(xPosition);
     flow.Tstag = interpLinear(xPositionOld,flow.Tstag,xPosition);
     %flow.Tstag = interp1(xPositionOld,flow.Tstag,xPosition,'linear');
     flow.T = flow.Tstag./(1 + (gam-1)*M2/2); % static temperature from stag. temp. definition
@@ -318,52 +312,35 @@ while ~converged
     % =================== RECALCULATE FRICTION & HEAT ========================
 
     % Heat transfer
-    %T = @(x) interp1(xPosition,flow.T,x,'linear');
     T = @(x) interpLinear(xPosition,flow.T,x);
     %T = @(x) interp1(xPosition,flow.T,x,'linear');
-    %Re = @(x) interp1(xPosition,flow.Re,x,'linear');
-    %Re = @(x) interpLinear(xPosition,flow.Re,x);
-    flow.hf = Pr(flow.T).^(2/3)*flow.density.*Cp(flow.T).*flow.U.*Cf(xPosition)/2; % heat transfer coefficient to interior nozzle wall
-    %hf = @(x) interp1(xPosition,flow.hf,x,'linear'); % estimated using Chilton-Colburn (modified Reynolds) analogy
-    %hf = @(x) interpLinear(xPosition,flow.hf,x);
+    flow.hf = Pr(flow.T).^(2/3).*flow.density.*Cp(flow.T).*flow.U.*Cf(xPosition)/2; % heat transfer coefficient to interior nozzle wall, estimated using Chilton-Colburn analogy
     
     % Redefine stagnation temperature distribution
-    %TstagXIntegrand = 4./(Cp(T(xPosition)).*flow.density.*flow.U.*D(xPosition).*(1./hf(xPosition) + t(xPosition)/kw + 1/hInf));
     TstagXIntegrand = 4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/kw + 1/hInf));
     TstagXIntegral = cumtrapz(xPosition,TstagXIntegrand);
     flow.Tstag = freestream.T*(1 - exp(-TstagXIntegral)) + inlet.Tstag*exp(-TstagXIntegral);
-    %Tstag = @(x) interp1(xPosition,flow.Tstag,x,'linear');
     Tstag = @(x) interpLinear(xPosition,flow.Tstag,x);
     %Tstag = @(x) interp1(xPosition,flow.Tstag,x,'linear');
-    %dTstagdxVal = (freestream.T - flow.Tstag)*4./(Cp(T(xPosition)).*flow.density.*flow.U.*D(xPosition).*(1./hf(xPosition) + t(xPosition)/kw + 1/hInf));
     dTstagdxVal = (freestream.T - flow.Tstag)*4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/kw + 1/hInf));
-    %dTstagdx = @(x) interp1(xPosition,dTstagdxVal,x,'linear');
     dTstagdx = @(x) interpLinear(xPosition,dTstagdxVal,x);
     %dTstagdx = @(x) interp1(xPosition,dTstagdxVal,x,'linear');
     
     % Estimate interior wall temperature
-    %Qw = Cp(T(xPosition)).*flow.density.*flow.U.*D(xPosition).*dTstagdx(xPosition)/4;
     Qw = Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*dTstagdxVal/4;
-    %Tw = @(x) Tstag(x) + interp1(xPosition,Qw,x,'linear')./hf(x);
-    %Tw = @(x) Tstag(x) + interpLinear(xPosition,Qw,x)./hf(x);
-    %nozzle.Tw = Tw(xPosition); % wall temperature
     nozzle.Tw = flow.Tstag + Qw./flow.hf; % wall temperature
-    %nozzle.wallRecoveryFactor = (Tw(xPosition)./T(xPosition) - 1)./((gam-1)*flow.M.^2/2);
     nozzle.wallRecoveryFactor = (nozzle.Tw./flow.T - 1)./((gam-1)*flow.M.^2/2);
-        
+    
     % Estimate exterior wall temperature
     nozzle.Text = ones(length(xPosition),1)*freestream.T - Qw./hInf; % nozzle exterior wall temp.
     
     % Redefine friction coefficient distribution (Sommer & Short's method)
-    %TPrimeRatio = 1 + 0.035*flow.M.^2 + 0.45*(Tw(xPosition)./T(xPosition) -1);
     TPrimeRatio = 1 + 0.035*flow.M.^2 + 0.45*(nozzle.Tw./flow.T -1);
-    %RePrimeRatio = 1./(TPrimeRatio.*(TPrimeRatio).^1.5.*(1 + 110.4./T(xPosition))./(TPrimeRatio + 110.4./T(xPosition)));
     RePrimeRatio = 1./(TPrimeRatio.*(TPrimeRatio).^1.5.*(1 + 110.4./flow.T)./(TPrimeRatio + 110.4./flow.T));
-    %CfIncomp = 0.074./Re(xPosition).^0.2;
     CfIncomp = 0.074./flow.Re.^0.2;
     flow.Cf = CfIncomp./TPrimeRatio./RePrimeRatio.^0.2;
-    %Cf = @(x) interp1(xPosition,flow.Cf,x,'linear');
     Cf = @(x) interpLinear(xPosition,flow.Cf,x);
+    %Cf = @(x) interp1(xPosition,flow.Cf,x,'linear');
     
     % Save old solution x position for next iteration
     xPositionOld = xPosition;
