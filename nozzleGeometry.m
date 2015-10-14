@@ -86,18 +86,33 @@ elseif(strcmp(shape,'cosine')) % for cosine shape
     D = sqrt(4*A/pi);
     y = D/2;
 elseif(strcmp(shape,'spline')) % for spline
-    y = ppval(pp,x); % cubic interpolant value at x
-    D = 2*y;
-    A = pi*y.^2;
+    %y = ppval(pp,x); % cubic interpolant value at x
+    
+    y = zeros(length(x),1); % initialize
     dydx = zeros(length(x),1); % initialize
+
     for ii = 1:length(x)
         ftemp = find(x(ii) <= pp.breaks);
         segment = ftemp(1) - 1; % segment numer of spline
         if segment < 1
             segment = 1;
         end
+        y(ii) = pp.coefs(segment,4) + pp.coefs(segment,3)*(x(ii)-pp.breaks(segment)) + pp.coefs(segment,2)*(x(ii)-pp.breaks(segment))^2 + + pp.coefs(segment,1)*(x(ii)-pp.breaks(segment))^3;
         dydx(ii) = pp.coefs(segment,3) + 2*pp.coefs(segment,2)*(x(ii)-pp.breaks(segment)) + 3*pp.coefs(segment,1)*(x(ii)-pp.breaks(segment))^2;
     end
+    
+%     startInd = 1;
+%     for ii = 1:length(pp.breaks)-1
+%         ftemp = find(x <= pp.breaks(ii+1));
+%         segment = ii; % segment numer of spline
+%         endInd = length(ftemp) - startInd + 1;
+%         y(startInd:endInd) = pp.coefs(segment,4) + pp.coefs(segment,3)*(x(startInd:endInd)-pp.breaks(segment)) + pp.coefs(segment,2)*(x(startInd:endInd)-pp.breaks(segment)).^2 + + pp.coefs(segment,1)*(x(startInd:endInd)-pp.breaks(segment)).^3;
+%         dydx(startInd:endInd) = pp.coefs(segment,3) + 2*pp.coefs(segment,2)*(x(startInd:endInd)-pp.breaks(segment)) + 3*pp.coefs(segment,1)*(x(startInd:endInd)-pp.breaks(segment)).^2;
+%         startInd = endInd + 1;
+%     end
+    
+    D = 2*y;
+    A = pi*y.^2;
     dAdx = 2*pi*y.*dydx;
 end
 

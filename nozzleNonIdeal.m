@@ -106,10 +106,14 @@ if(strcmp(nozzle.shape,'spline'))
     nozzle.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
 
     % Make necessary functions for splined nozzle shape
-    A = @(x) nozzleGeometry(x,'A',pp);
-    dAdx = @(x) nozzleGeometry(x,'dAdx',pp);
-    D = @(x) nozzleGeometry(x,'D',pp);
-    t = @(x) nozzleGeometry(x,'t',pp); % m, thickness of wall
+%     A = @(x) nozzleGeometry(x,'A',pp);
+%     dAdx = @(x) nozzleGeometry(x,'dAdx',pp);
+%     D = @(x) nozzleGeometry(x,'D',pp);
+%     t = @(x) nozzleGeometry(x,'t',pp); % m, thickness of wall
+    A = @(x) splineGeometry(x,'A',pp);
+    dAdx = @(x) splineGeometry(x,'dAdx',pp);
+    D = @(x) splineGeometry(x,'D',pp);
+    t = @(x) splineGeometry(x,'t',pp); % m, thickness of wall
 
 else % if nozzle shape is not a spline
     A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.length,nozzle.xThroat,nozzle.Ainlet2Athroat,nozzle.Aexit2Athroat,nozzle.shape);
@@ -348,6 +352,8 @@ while ~converged
     % =========== ESTIMATE ACCURACY OF CRITICAL FLOW LOCATION ================
     % This is still yet to be implemented, if it is at all important.
     
+    fprintf('%i ',counter);
+    
     if counter >= maxIterations
         fprintf('! Max iterations reached for non-ideal nozzle heat transfer & friction.\n');
         break;
@@ -359,10 +365,7 @@ while ~converged
     if(percentError < tolerance)
         converged = true;
         fprintf('Non-ideal nozzle heat transfer & friction calculations converged in %i iterations\n',counter);
-        break;
     end
-    
-    fprintf('%i ',counter);
     
 end
 

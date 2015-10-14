@@ -37,6 +37,31 @@ end
     
 % ============================== INPUTS ==================================
 
+% -------------------------- NOZZLE GEOMETRY -----------------------------
+nozzle.length = 1;
+nozzle.shape = 'spline';
+nozzle.xThroat = 0.33;
+nozzle.xExit = nozzle.length;
+
+if(strcmp(nozzle.shape,'spline'))
+    % To parameterize using a spline, the following must be provided:
+    % nozzle.spline.seed = either a shape already defined in the
+    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
+    % denote the location of the control points with the origin being at
+    % the center of the inlet area
+    % nozzle.spline.nControlPoints = number of control points
+    % nozzle.spline.controlPointSpacing = either 'regular' where control
+    % points will be evenly spaced or a vector giving the x-location
+    % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
+    % 2nd argument is slope of outlet
+    nozzle.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
+    nozzle.spline.nControlPoints = 3;
+    nozzle.spline.controlPointSpacing = 'regular'; %[0 nozzle.xThroat nozzle.length];
+    nozzle.spline.slopes = [0, 0];
+end
+
+% ------------------------- FLOW MODEL INPUTS ----------------------------
+
 % Mixing options: 'area-averaged', 'massflow-averaged', 'multistream-samePt'
 mixing = 'area-averaged';
 %fprintf('%s mixing\n',mixing);
@@ -158,12 +183,6 @@ else
     nozzle.throat.A = nozzle.inlet.A/nozzle.Ainlet2Athroat;
     nozzle.exit.A = nozzle.Aexit2Athroat*nozzle.inlet.A/nozzle.Ainlet2Athroat;    
 end
-
-% -------------------------- NOZZLE GEOMETRY -----------------------------
-nozzle.length = 1;
-nozzle.shape = 'linear';
-nozzle.xThroat = 0.33;
-nozzle.xExit = nozzle.length;
 
 % ---------------------- GENERAL ENGINE PARAMETERS -----------------------
 % Diffuser
@@ -313,7 +332,6 @@ while (abs(errorNozzleInletMach) > tolerance)
 
     % Set new nozzle inlet Mach number
     nozzle.inlet.M = nozzleFlow.M(1);
-    %options = optimset('TolFun',1e-8,'Display','none');
     options = optimset('TolFun',error.solver.inletMach,'Display','none');
     ftemp = fsolve(@FanTurbineExitMachFunc,[fan.exit.M, turbine.exit.M],options);
     fan.exit.M = ftemp(1);
