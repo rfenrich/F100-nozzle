@@ -2,7 +2,7 @@
 % SI units are used for every parameter, except for altitude (in
 % feet), and sfc (in lb/lbf/hr). Sorry for mixing units.
 %
-% Rick Fenrich 7/23/15, modified 7/31/15
+% Rick Fenrich 7/23/15, modified 10/15/15
 
 % =========================== SET INPUTS =================================
 

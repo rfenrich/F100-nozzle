@@ -1,5 +1,6 @@
 function [ y ] = interpLinear( xVec, yVec, x )
-% Linear interpolation function
+% Linear interpolation function. Faster than Matlab's interp1 with the
+% 'linear' option for certain cases.
 %
 % Rick Fenrich 10/6/15
 

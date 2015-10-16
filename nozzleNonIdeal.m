@@ -1,4 +1,4 @@
-function [ nozzle ] = nozzleNonIdeal( fluid, inlet, freestream, nozzle, hInf, error)
+function [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, hInf, error )
 % Solve for flow along length of non-ideal nozzle given geometry, inlet
 % stagnation temperature and pressure, and freestream temperature and
 % pressure. Iterate for Cf and stagnation temperature. An ODE for M^2 is 
@@ -14,18 +14,23 @@ function [ nozzle ] = nozzleNonIdeal( fluid, inlet, freestream, nozzle, hInf, er
 % INPUTS:
 % fluid = structure with fields: gam (ratio of specific heats) and R
 %         (specific ideal gas constant)
-% inlet = structure with fields: Tstag, Pstag, D
 % freestream = structure with fields: T and P
-% nozzle = structure with fields: Ainlet2Athroat, Aexit2Athroat, length, shape,
-%          xThroat,  xExit
+% nozzle = structure with fields: geometry.Ainlet2Athroat, 
+%          geometry.Aexit2Athroat, geometry.length, geometry.shape,
+%          geometry.xThroat,  geometry.xExit, inlet.Tstag, inlet.Pstag,
+%          inlet.D
 % hInf = generalized heat transfer coeff. from outside nozzle wall to
 %        freestream (units W/m^2-K)
+% error = structure defining error tolerances for iterations and solvers
+%         included the following fields: error.betweenIterations.exitTemp,
+%         error.solver.apparentThroatLocation, error.dMdxDenominator,
+%         error.solver.M2relative, error.solver.M2absolute
 %
 % OUTPUTS:
 % nozzle = modified input structure with additional fields including flow
 % and specific geometry
 %
-% Rick Fenrich 7/17/15
+% Rick Fenrich 7/17/15 modified 10/16/15
 
 % ========================== GAS PROPERTIES ==============================
 gam = fluid.gam;
@@ -37,6 +42,9 @@ AreaMachFunc = @(g,M) ((g+1)/2)^((g+1)/(2*(g-1)))*M./(1+(g-1)*M.^2/2).^((g+1)/(2
 dynamicViscosity = @(T) 1.716e-5*(T/273.15).^1.5*(273.15 + 110.4)./(T + 110.4); % kg/m*s
 
 % ========================= NOZZLE PROPERTIES ============================
+% Set inlet properties
+inlet = nozzle.inlet;
+
 % Calculate nozzle inlet, throat, and exit areas if they are not given:
 if(~exist('nozzle.inlet.A','var'))
     nozzle.inlet.A = pi*inlet.D^2/4;
@@ -211,7 +219,7 @@ while ~converged
         xPosition = -flipud(xPosition) + nozzle.geometry.xExit;
         M2 = flipud(M2);
 
-        PstagExit = inlet.Pstag*(nozzle.inlet.A/nozzle.exit.A).*(AreaMachFunc(gam,sqrt(M2(1)))./AreaMachFunc(gam,exit.M)).*sqrt(Tstag(nozzle.xExit)/inlet.Tstag); % stagnation pressure from mass conservation
+        PstagExit = inlet.Pstag*(nozzle.inlet.A/nozzle.exit.A).*(AreaMachFunc(gam,sqrt(M2(1)))./AreaMachFunc(gam,exit.M)).*sqrt(Tstag(nozzle.geometry.xExit)/inlet.Tstag); % stagnation pressure from mass conservation
         Pexit = PstagExit/(1 + (gam-1)*M2(end)/2).^(gam/(gam-1));
         
         fprintf('! Subsonic calculations for non-ideal nozzle not set up correctly yet\n');
@@ -364,6 +372,9 @@ while ~converged
     
 end
 
+% Assign flow data to nozzle 
+nozzle.flow = flow;
+
 nozzle.PstagRatio = flow.Pstag(end)/flow.Pstag(1);
 nozzle.exit.Pstag = flow.Pstag(end);
 nozzle.TstagRatio = flow.Tstag(end)/flow.Tstag(1);
@@ -380,8 +391,6 @@ nozzle.geometry.A = A(xPosition);
 nozzle.geometry.dAdx = dAdx(xPosition);
 nozzle.geometry.D = D(xPosition);
 nozzle.geometry.t = t(xPosition);
-
-nozzle.flow = flow;
 
 end
 

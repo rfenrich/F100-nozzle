@@ -4,17 +4,21 @@ function [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, ma
 % INPUTS:
 % altitude = altitude in ft
 % mach = freestream Mach number
-% control = control structure dictating which parameters are to externally
-%           set by the user; if left empty, standard values are assumed by
-%           the program
+% control = control structure dictating which parameters are to be 
+%           externally set by the user; if left empty, standard values are 
+%           assumed by the program
+% error = structure defining error tolerances for iterations and solvers
+%         for turbofan engine calculations and nozzle calculations; if left
+%         empty, standard values are assumed by the program
 %
 % OUTPUTS:
 % thrust = structure with calculated thrust
 % sfc = specific fuel consumption
 % thermal efficiency of engine
-% engine = structure with nozzle parameters
+% engine = structure with engine component properties, and extensive nozzle
+%          properties
 %
-% Rick Fenrich 7/31/15 updated 10/14/15
+% Rick Fenrich 7/31/15 updated 10/16/15
 
 options.Display='none'; % used for Matlab's fzero
 
@@ -36,6 +40,17 @@ if(isempty(control))
     control.nozzle.throat.A = 0;
     control.nozzle.geometry.Ainlet2Athroat = 0;
     control.nozzle.geometry.Aexit2Athroat = 0;    
+end
+
+% If error struct is empty, set reasonable error tolerances
+if(isempty(error))
+    error.betweenIterations.inletMach = 1e-10;
+    error.solver.inletMach = 1e-8;
+    error.betweenIterations.exitTemp = 1e-6;
+    error.solver.apparentThroatLocation = 1e-6;
+    error.solver.M2relative = 1e-10;
+    error.solver.M2absolute = 1e-10;
+    error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime    
 end
     
 % ============================== INPUTS ==================================
@@ -352,7 +367,7 @@ while (abs(errorNozzleInletMach) > tolerance)
 
     %[ nozzleFlow, nozzle, xPosition ] = nozzleIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle);
     %nozzle.PstagRatio = 0.97;
-    [ nozzle ] = nozzleNonIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle, 400, error);
+    [ nozzle ] = nozzleNonIdeal( struct('gam',gam,'R',R), freestream, nozzle, 400, error);
     errorNozzleInletMach = (nozzle.flow.M(1) - nozzle.inlet.M)/nozzle.flow.M(1);
     %fprintf('%% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
 

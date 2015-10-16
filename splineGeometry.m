@@ -1,4 +1,9 @@
 function [ varargout ] = splineGeometry( x, outputResult, pp )
+% splineGeometry.m is used to provide nozzle radius, diameter, area, change
+% in area, and thickness for a spline parameterized nozzle geometry. 
+% Use consistent units. It has been separated from nozzleGeometry in
+% efforts to make the code faster.
+%
 % General usage is:
 % [output] = nozzleGeometry(x, outputResult, ...) where:
 %  x = dimensional location along nozzle length (scalar or vector)
@@ -10,13 +15,20 @@ function [ varargout ] = splineGeometry( x, outputResult, pp )
 % [output] = nozzleGeometry(x, outputResult, pp) where
 % pp  = piecewise polynomial coefficient matrix given by the Matlab spline 
 % function
+%
 % Furthermore, the function will provide the nozzle throat location(s) and
 % size(s) when called in the following way:
 % [xThroat, yThroat] = nozzleGeometry(x, 'throat', pp)
 %
+% OUTPUTS:
+% A = area corresponding to nozzle cross-sections at location x
+% dAdx = rate of change of area corresponding to " "
+% y = radius corresponding to " "
+% D = diameter corresponding to " "
+%
 % Rick Fenrich 10/13/15
 
-%y = ppval(pp,x); % cubic interpolant value at x
+% =========== CALCULATE GEOMETRY BASED ON SPLINE EQUATION ================
 
 y = zeros(length(x),1); % initialize
 dydx = zeros(length(x),1); % initialize
@@ -38,6 +50,8 @@ dAdx = 2*pi*y.*dydx;
 % For right now, set a constant thickness for the nozzle, regardless of
 % shape. Can incorporate variable thickness calculations later above:
 t = 0.01*ones(length(x),1);
+
+% ========================== OUTPUT RESULTS ==============================
 
 if(strcmp(outputResult,'A'))
     varargout{1} = A;
