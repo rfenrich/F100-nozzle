@@ -14,7 +14,7 @@ function [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, ma
 % thermal efficiency of engine
 % engine = structure with nozzle parameters
 %
-% Rick Fenrich 7/31/15 adapted 9/24/15 for error sensitivity study
+% Rick Fenrich 7/31/15 updated 10/14/15
 
 options.Display='none'; % used for Matlab's fzero
 
@@ -28,43 +28,20 @@ if(isempty(control))
     control.compressor.overallPressureRatio = 0;
     control.burner.efficiency = 0;
     control.turbine.efficiency.polytropic = 0;
+    control.nozzle.geometry.shape = 0;
+    control.nozzle.geometry.length = 0;
+    control.nozzle.geometry.xThroat = 0;
     control.nozzle.inlet.Abypass2Acore = 0;
     control.nozzle.inlet.D = 0;
     control.nozzle.throat.A = 0;
-    control.nozzle.Ainlet2Athroat = 0;
-    control.nozzle.Aexit2Athroat = 0;
+    control.nozzle.geometry.Ainlet2Athroat = 0;
+    control.nozzle.geometry.Aexit2Athroat = 0;    
 end
     
 % ============================== INPUTS ==================================
 
-% -------------------------- NOZZLE GEOMETRY -----------------------------
-nozzle.length = 1;
-nozzle.shape = 'spline';
-nozzle.xThroat = 0.33;
-nozzle.xExit = nozzle.length;
-
-if(strcmp(nozzle.shape,'spline'))
-    % To parameterize using a spline, the following must be provided:
-    % nozzle.spline.seed = either a shape already defined in the
-    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
-    % denote the location of the control points with the origin being at
-    % the center of the inlet area
-    % nozzle.spline.nControlPoints = number of control points
-    % nozzle.spline.controlPointSpacing = either 'regular' where control
-    % points will be evenly spaced or a vector giving the x-location
-    % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
-    % 2nd argument is slope of outlet
-    nozzle.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
-    nozzle.spline.nControlPoints = 3;
-    nozzle.spline.controlPointSpacing = 'regular'; %[0 nozzle.xThroat nozzle.length];
-    nozzle.spline.slopes = [0, 0];
-end
-
-% ------------------------- FLOW MODEL INPUTS ----------------------------
-
 % Mixing options: 'area-averaged', 'massflow-averaged', 'multistream-samePt'
 mixing = 'area-averaged';
-%fprintf('%s mixing\n',mixing);
 
 atm = StndAtm(altitude*0.3048,'SI');
 freestream.P = atm.P; % Pa, atmospheric pressure
@@ -149,6 +126,54 @@ end
 
 % Nozzle geometry
 
+if(control.nozzle.geometry.shape)
+    nozzle.geometry.shape = control.nozzle.geometry.shape;
+else
+    nozzle.geometry.shape = 'linear';
+end
+
+if(control.nozzle.geometry.length)
+    nozzle.geometry.length = control.nozzle.geometry.length;
+    nozzle.geometry.xExit = nozzle.geometry.length;
+else
+    nozzle.geometry.length = 1;
+    nozzle.geometry.xExit = nozzle.geometry.length;
+end
+
+if(control.nozzle.geometry.xThroat)
+    nozzle.geometry.xThroat = control.nozzle.geometry.xThroat;
+else
+    nozzle.geometry.xThroat = nozzle.geometry.length/3;
+end
+
+if(strcmp(nozzle.geometry.shape,'spline'))
+    
+    if(control.nozzle.geometry.spline.seed)
+        nozzle.geometry.spline.seed = control.nozzle.geometry.spline.seed;
+    else
+        nozzle.geometry.spline.seed = 'linear';
+    end
+    
+    if(control.nozzle.geometry.spline.nControlPoints)
+        nozzle.geometry.spline.nControlPoints = control.nozzle.geometry.spline.nControlPoints;
+    else
+        nozzle.geometry.spline.nControlPoints = 3;
+    end 
+    
+    if(length(control.nozzle.geometry.spline.controlPointSpacing) == nozzle.geometry.spline.nControlPoints)
+        nozzle.geometry.spline.controlPointSpacing = control.nozzle.geometry.spline.controlPointSpacing;
+    else
+        nozzle.geometry.spline.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]';
+    end   
+    
+    if(length(control.nozzle.geometry.spline.slopes) == 2)
+        nozzle.geometry.spline.slopes = control.nozzle.geometry.spline.slopes;
+    else
+        nozzle.geometry.spline.slopes = [0, 0];
+    end    
+    
+end
+
 if(control.nozzle.inlet.Abypass2Acore)
     nozzle.inlet.Abypass2Acore = control.nozzle.inlet.Abypass2Acore;
 else
@@ -169,19 +194,22 @@ if(control.nozzle.throat.A)
     else
         nozzle.exit.A = 0.4207; % exit area is fixed
     end
-    nozzle.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
-    nozzle.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
-elseif(control.nozzle.Ainlet2Athroat && control.nozzle.Aexit2Athroat)
-    nozzle.Ainlet2Athroat = control.nozzle.Ainlet2Athroat;
-    nozzle.Aexit2Athroat = control.nozzle.Aexit2Athroat;
-    nozzle.throat.A = nozzle.inlet.A/nozzle.Ainlet2Athroat;
-    nozzle.exit.A = nozzle.Aexit2Athroat*nozzle.inlet.A/nozzle.Ainlet2Athroat;
+    nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
+    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
+    if(control.nozzle.geometry.Ainlet2Athroat && control.nozzle.geometry.Aexit2Athroat)
+        fprintf('nozzle.Ainlet2Athroat and nozzle.Aexit2Athroat overwritten since nozzle.throat.A is prescribed\n');
+    end
+elseif(control.nozzle.geometry.Ainlet2Athroat && control.nozzle.geometry.Aexit2Athroat)
+    nozzle.geometry.Ainlet2Athroat = control.nozzle.geometry.Ainlet2Athroat;
+    nozzle.geometry.Aexit2Athroat = control.nozzle.geometry.Aexit2Athroat;
+    nozzle.throat.A = nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;
+    nozzle.exit.A = nozzle.geometry.Aexit2Athroat*nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;
 else
     fprintf('Nozzle area ratios not specified. Setting defaults...\n');
-    nozzle.Ainlet2Athroat = 1.368;
-    nozzle.Aexit2Athroat = 1.4;
-    nozzle.throat.A = nozzle.inlet.A/nozzle.Ainlet2Athroat;
-    nozzle.exit.A = nozzle.Aexit2Athroat*nozzle.inlet.A/nozzle.Ainlet2Athroat;    
+    nozzle.geometry.Ainlet2Athroat = 1.368;
+    nozzle.geometry.Aexit2Athroat = 1.4;
+    nozzle.throat.A = nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;
+    nozzle.exit.A = nozzle.geometry.Aexit2Athroat*nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;    
 end
 
 % ---------------------- GENERAL ENGINE PARAMETERS -----------------------
@@ -263,8 +291,7 @@ turbine.exit.Tstag = turbine.inlet.Tstag*turbine.TstagRatio;
 turbine.efficiency.isentropic = (turbine.PstagRatio^((gam-1)*turbine.efficiency.polytropic/gam) - 1)/(turbine.PstagRatio^((gam-1)/gam) - 1);
 
 % ------------------------------ MIXING ----------------------------------
-%tolerance = 1e-10; % tolerance for error in nozzle inlet Mach number
-tolerance = error.betweenIterations.inletMach;
+tolerance = error.betweenIterations.inletMach; % tolerance for error in nozzle inlet Mach number
 errorNozzleInletMach = 1;
 iterationLimit = 10;
 counter = 0;
@@ -283,7 +310,6 @@ while (abs(errorNozzleInletMach) > tolerance)
             % Calculate turbine exit Mach number using mass conservation
             [turbine.exit.M, ~, exitflag] = fzero( @(x) AreaMachFunc(gam,fan.exit.M) - bypassRatio*sqrt(fan.exit.Tstag/turbine.exit.Tstag)*(turbine.exit.Pstag/fan.exit.Pstag)*(1/nozzle.inlet.Abypass2Acore)*AreaMachFunc(gam,x),0.5,options);
                 if (exitflag ~= 1)
-                    %fprintf('! fzero calculated wrong turbine.exit.M, lowering fan.exit.M\n');
                     fan.exit.M = fan.exit.M - 0.1; % lower the fan exit Mach
                 else
                     incorrect = 0;
@@ -326,35 +352,36 @@ while (abs(errorNozzleInletMach) > tolerance)
 
     %[ nozzleFlow, nozzle, xPosition ] = nozzleIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle);
     %nozzle.PstagRatio = 0.97;
-    [ nozzleFlow, nozzle, xPosition ] = nozzleNonIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle, 400, error);
-    errorNozzleInletMach = (nozzleFlow.M(1) - nozzle.inlet.M)/nozzleFlow.M(1);
-    fprintf('%% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
+    [ nozzle ] = nozzleNonIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle, 400, error);
+    errorNozzleInletMach = (nozzle.flow.M(1) - nozzle.inlet.M)/nozzle.flow.M(1);
+    %fprintf('%% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
 
     % Set new nozzle inlet Mach number
-    nozzle.inlet.M = nozzleFlow.M(1);
+    nozzle.inlet.M = nozzle.flow.M(1);
     options = optimset('TolFun',error.solver.inletMach,'Display','none');
     ftemp = fsolve(@FanTurbineExitMachFunc,[fan.exit.M, turbine.exit.M],options);
     fan.exit.M = ftemp(1);
     turbine.exit.M = ftemp(2);
     
     if(counter == iterationLimit)
-        fprintf('Nozzle inlet Mach number not converged.\n');
+        fprintf('! Nozzle inlet Mach number not converged.\n');
         break;
     end
 
 end
 
-% Produce warning if the unnatural/unfeasible happens
+% Produce warning if the unnatural/unfeasible happens, i.e. supersonic flow
+% in fan duct
 if(fan.exit.M > 1)
-    fprintf('Supersonic flow in bypass fan duct: %f Mach\n',fan.exit.M);
+    fprintf('! Supersonic flow in bypass fan duct: %f Mach\n',fan.exit.M);
 end
 
-nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzleFlow.M(1));
+nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
 
 % Nozzle exit parameters
 nozzle.exit.Pstag = nozzle.inlet.Pstag*nozzle.PstagRatio;
-nozzle.exit.M = nozzleFlow.M(end);
-nozzle.exit.T = nozzleFlow.T(end);
+nozzle.exit.M = nozzle.flow.M(end);
+nozzle.exit.T = nozzle.flow.T(end);
 nozzle.exit.U = nozzle.exit.M*sqrt(gam*R*nozzle.exit.T);
 nozzle.exit.P = nozzle.exit.Pstag/(1 + (gam-1)*nozzle.exit.M^2/2)^(gam/(gam-1));
 
@@ -363,14 +390,14 @@ nozzle.exit.P = nozzle.exit.Pstag/(1 + (gam-1)*nozzle.exit.M^2/2)^(gam/(gam-1));
 % Fuel mass flow rate
 fuel.massFlowRate = (f/(1+f))*nozzle.massFlowRate;
 
-% Estimate thrust
+% Calculate thrust
 thrust.total = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + fuel.massFlowRate + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 thrust.specific = thrust.total/(nozzle.massFlowRate*(1-f/(1+f)));
 
-% Estimate specific fuel consumption
+% Calculate specific fuel consumption
 sfc = fuel.massFlowRate/thrust.total * 2.20462 * 3600 / 0.22481;
 
-% Estimate thermal efficiency
+% Calculate thermal efficiency
 thermalEfficiency = (thrust.total*freestream.U + 0.5*nozzle.massFlowRate*(nozzle.exit.U - freestream.U)^2 - 0.5*fuel.massFlowRate*freestream.U^2)/(fuel.massFlowRate*fuel.enthalpy);
 
 % Output data
@@ -431,6 +458,8 @@ engine.nozzle = nozzle;
 % formatPlot;
 
 function [ ftemp ] = FanTurbineExitMachFunc( itemp )
+    % Provides system of 2 equations to be solved for fan and turbine exit
+    % Mach number
 
     fanExitMach = itemp(1);
     turbineExitMach = itemp(2);
