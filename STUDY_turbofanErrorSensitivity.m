@@ -10,18 +10,20 @@ altitude = 0; % in feet
 mach = 0;
 
 % =================== SET ERROR TOLERANCE RANGES =========================
-inletMachIterationError = [1e-8 1e-10 1e-12];
-inletMachSolverError = [1e-6 1e-8 1e-10];
-exitTempIterationError = [1e-4 1e-6 1e-8];
-apparentThroatSolverError = [1e-4 1e-6 1e-8];
-M2SolverRelError = [1e-8 1e-10 1e-12];
-M2SolverAbsError = [1e-8 1e-10 1e-12];
-dMdxDenominator = [4];
+inletMachIterationError = [1e-6 1e-8 1e-10 1e-12];
+inletMachSolverError = [1e-4 1e-6 1e-8 1e-10];
+exitTempIterationError = [1e-2 1e-4 1e-6 1e-8 1e-10 1e-12];
+apparentThroatSolverError = [1e-2 1e-4 1e-6 1e-8];
+M2SolverRelError = [1e-6 1e-8 1e-10 1e-12 1e-14];
+M2SolverAbsError = [1e-6 1e-8 1e-10 1e-12 1e-14];
+dMdxDenominator = [3 4 5];
 
 % ======================= INITIALIZE CONTROLS ============================
 % If a control is set to zero then turbofanF100.m will
 % assume a typical value for that parameter; otherwise, it will use the
 % parameter value that the user provides.
+
+% -------------------------- ENGINE CONTROLS -----------------------------
 
 control.bypassRatio = 0;
 control.f = 0;
@@ -33,14 +35,36 @@ control.burner.PstagRatio = 0;
 control.burner.efficiency = 0;
 control.turbine.efficiency.polytropic = 0;
 control.turbine.efficiency.shaft = 0;
+
+% ---------------------- NOZZLE GEOMETRY CONTROLS ------------------------
+
+control.nozzle.geometry.shape = 'spline';
+control.nozzle.geometry.length = 1;
+control.nozzle.geometry.xThroat = 0.33;
+
+if(strcmp(control.nozzle.geometry.shape,'spline'))
+    % To parameterize using a spline, the following must be provided:
+    % nozzle.spline.seed = either a shape already defined in the
+    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
+    % denote the location of the control points with the origin being at
+    % the center of the inlet area
+    % nozzle.spline.nControlPoints = number of control points
+    % nozzle.spline.controlPointSpacing = either 'regular' where control
+    % points will be evenly spaced or a vector giving the x-location
+    % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
+    % 2nd argument is slope of outlet
+    control.nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
+    control.nozzle.geometry.spline.nControlPoints = 3;
+    control.nozzle.geometry.spline.controlPointSpacing = [0 control.nozzle.geometry.xThroat control.nozzle.geometry.length]'; % 'regular';
+    control.nozzle.geometry.spline.slopes = [0, 0];
+end
+
 control.nozzle.inlet.Abypass2Acore = 0;
 control.nozzle.inlet.D = 0; % m
 control.nozzle.throat.A = 0; % m^2
-control.nozzle.Ainlet2Athroat = 0;
-control.nozzle.Aexit2Athroat = 0;
 
-control.nozzle.Ainlet2Athroat = 1.368;
-control.nozzle.Aexit2Athroat = 1.4;
+control.nozzle.geometry.Ainlet2Athroat = 1.368;
+control.nozzle.geometry.Aexit2Athroat = 1.4;
 
 % ----------------------- RUN SIMPLE TEST CASE ---------------------------
 
@@ -52,7 +76,7 @@ fprintf(fid,'altitude: %f, mach: %f\n',altitude,mach);
 
 % Run nominal case
 fprintf(fid,'Nominal case\n');
-nominalIndices = [2 2 2 2 2 2 1];
+nominalIndices = [3 3 4 3 3 3 2];
 fprintf(fid,'inlet Mach iter error: %e\n',inletMachIterationError(nominalIndices(1)));
 fprintf(fid,'inlet Mach solver error: %e\n',inletMachSolverError(nominalIndices(2)));
 fprintf(fid,'exit T iter error: %e\n',exitTempIterationError(nominalIndices(3)));
