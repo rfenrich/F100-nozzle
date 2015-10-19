@@ -1,0 +1,29 @@
+
+environment
+  #graphics
+
+method
+  polynomial_chaos
+    quadrature_order   = 2
+    dimension_preference = 2 2 2 2 2 2 2 2 2
+    samples = 10000
+    seed = 12347 rng rnum2
+    response_levels = 1. 2. 4. 8. 16. 32. 64. 128. 256. 512. 1024. 2048. 4096. 8192. 16384. 32768.
+    variance_based_decomp #interaction_order = 1
+
+variables
+  normal_uncertain = 9
+    means             =  0.6      3.06       0.83     0.87          24.5            0.95           0.95        0.85             0.97
+    std_deviations    =  0.03     0.1        0.05     0.05          0.5             0.01           0.01        0.05             0.01
+    descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft'
+
+interface
+  analysis_driver = 'matlab -nojvm -nodisplay -nosplash < dakotaInterfaceTurbofanModel.m'
+    fork
+    parameters_file = 'params.in'
+    results_file    = 'results.out'
+
+responses
+  response_functions = 4
+  no_gradients
+  no_hessians
