@@ -1,8 +1,8 @@
-% Drive the turbofanF100 function and make some interesting plots.
-% SI units are used for every parameter, except for altitude (in
-% feet), and sfc (in lb/lbf/hr). Sorry for mixing units.
+% Drive the turbofanF100 function and determine sensitivity of common
+% outputs (thrust, sfc, eta, etc.) to each of the required error tolerances
+% in the turbofanF100 and nonIdealNozzle functions.
 %
-% Rick Fenrich 7/23/15, modified 7/31/15
+% Rick Fenrich 10/7/15
 
 % =========================== SET INPUTS =================================
 

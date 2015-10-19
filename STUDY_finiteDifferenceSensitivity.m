@@ -1,15 +1,16 @@
-% Drive the turbofanF100 function and make some interesting plots.
-% SI units are used for every parameter, except for altitude (in
-% feet), and sfc (in lb/lbf/hr). Sorry for mixing units.
+% Drive the turbofanF100 function and determine sensitivity of various
+% outputs (thrust, sfc, eta, etc.) to small relative changes in common
+% inputs (such as efficiencies, bypass ratio, etc.). The purpose is to
+% determine how sensitive finite difference calculations are.
 %
-% Rick Fenrich 7/23/15, modified 7/31/15
+% Rick Fenrich 8/31/15
 
 % =========================== SET INPUTS =================================
 
 altitude = 0; % in feet
 mach = 0;
 delta = 1e-4; % absolute delta used in forward finite difference calculation
-rel_delta = 1e-2;
+rel_delta = 1e-2; % relative delta used in forward finite diff. calculation
 
 % =================== SET ERROR TOLERANCE RANGES =========================
 error.betweenIterations.inletMach = 1e-10;

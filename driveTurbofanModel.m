@@ -6,12 +6,8 @@
 
 % =========================== SET INPUTS =================================
 
-<<<<<<< HEAD
 altitude = 35000; % in feet
-mach = 0.65;
-=======
-altitude = 15000; % in feet
-mach = 0.6;
+mach = 0.81;
 
 % =================== SET ERROR TOLERANCE RANGES =========================
 % Set error tolerances for various iterations and solvers
@@ -22,7 +18,6 @@ error.solver.apparentThroatLocation = 1e-6;
 error.solver.M2relative = 1e-10;
 error.solver.M2absolute = 1e-10;
 error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
->>>>>>> temporary_sensitivity_study
 
 % ======================= INITIALIZE CONTROLS ============================
 % If a control is set to zero then turbofanF100.m will
