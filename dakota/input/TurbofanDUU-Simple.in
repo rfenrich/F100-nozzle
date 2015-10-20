@@ -1,0 +1,90 @@
+environment
+    graphics
+    output_precision = 16
+    method_pointer = 'OPTIM'
+
+method
+    id_method = 'OPTIM'
+    model_pointer = 'OPTIM_M'
+        dot_slp
+        #dot_mmfd
+        #optpp_q_newton
+        convergence_tolerance = 1.e-8
+
+model
+    id_model = 'OPTIM_M'
+    nested
+        variables_pointer = 'OPTIM_V'
+        sub_method_pointer = 'UQ'
+        responses_pointer = 'OPTIM_R'
+        primary_response_mapping   =  0.  0.   0. 0.   0. 0.   -1. 0.     0. 0.
+        secondary_response_mapping =  -1. 0.   0. 0.   0. 0.   0. 0.     0. 0.
+
+variables
+    id_variables = 'OPTIM_V'
+    continuous_design = 2
+        initial_point   0.011 0.9
+        lower_bounds    0.006 .8
+        upper_bounds    0.025  1.
+        descriptors     'f' 'burnerEff'
+
+responses
+    id_responses = 'OPTIM_R'
+    objective_functions = 1
+    nonlinear_inequality_constraints = 1
+    nonlinear_inequality_lower_bounds = -50000.
+    numerical_gradients
+        method_source dakota
+        interval_type forward
+        fd_gradient_step_size = 1.e-3
+    no_hessians
+
+method
+    id_method = 'UQ'
+    model_pointer = 'UQ_M'
+    local_reliability
+
+model
+    id_model = 'UQ_M'
+    single
+        variables_pointer = 'UQ_V'
+        interface_pointer = 'UQ_I'
+        responses_pointer = 'UQ_R'
+
+variables
+    id_variables = 'UQ_V'
+    continuous_design = 2
+#    normal_uncertain = 10
+#        means             =  0.6      3.06       0.84     0.87          24.5             0.95          0.965       0.86             0.97              0.275
+#        std_deviations    =  0.01     0.05       0.01     0.01          0.1              0.01          0.01        0.015            0.01              0.002
+#        lower_bound       =  0.57     2.95       0.82     0.84          24.0             0.92          0.94        0.83             0.95              0.27
+#        upper_bound       =  0.63     3.21       0.86     0.88          25.0             0.98          0.99        0.87             0.99              0.3
+#        descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
+
+    normal_uncertain = 9
+        means             =  0.6      3.06       0.84     0.87          24.5             0.95            0.86             0.97              0.275
+        std_deviations    =  0.01     0.05       0.01     0.01          0.1              0.01              0.015            0.01              0.002
+        lower_bound       =  0.57     2.95       0.82     0.84          24.0             0.92                0.83             0.95              0.27
+        upper_bound       =  0.63     3.21       0.86     0.88          25.0             0.98               0.87             0.99              0.3
+        descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag'  'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
+
+interface
+    id_interface = 'UQ_I'
+    analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceTurbofanModel.m'
+        fork asynchronous evaluation_concurrency = 4
+        work_directory named '/tmp/dakota_work'
+        link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
+        directory_tag #directory_save
+        file_tag #file_save
+        parameters_file = 'params.in'
+        results_file    = 'results.out'
+
+responses
+    id_responses = 'UQ_R'
+    response_functions = 5
+    numerical_gradients
+        method_source dakota
+        interval_type forward
+        fd_gradient_step_size = 1.e-3
+    no_hessians
+    response_descriptors = 'thrust' 'sfc' 'massFlowRate' 'thermalEfficiency' 'fuelConsumption'

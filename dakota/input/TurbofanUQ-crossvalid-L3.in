@@ -1,0 +1,32 @@
+environment
+  output_precision = 16
+
+method
+  polynomial_chaos
+    sparse_grid_level = 3
+    variance_based_decomp interaction_order = 2
+    normalized
+    import_approx_points_file = 'Turbofan-samples.tab'
+    export_approx_points_file = 'Turbofan-crossvalid-L3.tab'
+
+variables
+  uniform_uncertain = 10
+    lower_bound       =  0.57     2.95       0.82     0.84          24.0             0.92          0.94        0.83             0.95              0.27
+    upper_bound       =  0.63     3.21       0.86     0.88          25.0             0.98          0.99        0.87             0.99              0.3
+    descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
+
+interface
+  analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceTurbofanModel.m'
+    fork asynchronous evaluation_concurrency = 4
+    work_directory named '/tmp/dakota_work'
+    link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
+    directory_tag #directory_save
+    file_tag #file_save
+    parameters_file = 'params.in'
+    results_file    = 'results.out'
+
+responses
+  response_functions = 4
+  no_gradients
+  no_hessians
+  response_descriptors = 'thrust' 'sfc' 'massFlowRate' 'thermalEfficiency'
