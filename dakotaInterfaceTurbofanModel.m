@@ -139,7 +139,7 @@ end
 
 % ----------------------- RUN turbofan simulation ---------------------------
 try
-    [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control );
+    [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control, error );
 catch ME
     thrust.total = NaN;
     sfc = NaN;
