@@ -4,7 +4,7 @@ clear all; close all;
 
 %%
 m = 10;
-M = 100;
+M = 5;
 X = 2*rand(M,m)-1;
 
 thrusts = zeros(M,1);

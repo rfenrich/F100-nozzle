@@ -1,4 +1,4 @@
-% Test nozzleGeometry function by comparing areas calculated from the A(x)
+% Test splineGeometry function by comparing areas calculated from the A(x)
 % area function, D(x) diameter function, and dAdx(x) area change function.
 %
 % Rick Fenrich 9/1/15
@@ -24,9 +24,9 @@ slopes = [0, 0];
 pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
 
 % Make necessary functions for splined nozzle shape
-A = @(x) nozzleGeometry(x,'A',pp);
-dAdx = @(x) nozzleGeometry(x,'dAdx',pp);
-D = @(x) nozzleGeometry(x,'D',pp);
+A = @(x) splineGeometry(x,'A',pp);
+dAdx = @(x) splineGeometry(x,'dAdx',pp);
+D = @(x) splineGeometry(x,'D',pp);
 t = @(x) 0.01; % m, thickness of wall
 
 % Discretize x-axis
