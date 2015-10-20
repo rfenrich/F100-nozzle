@@ -33,8 +33,20 @@ control.nozzle.Ainlet2Athroat = 1.368;
 control.nozzle.Aexit2Athroat = 1.4;
 
 % Read parameters from Dakota generated parameter file:
-parameters_file = 'params.in';
-results_file = 'results.out';
+path = textscan(pwd,'%s','delimiter','.');
+mytag = NaN;
+if(numel(path{:})>1)
+    mytag_temp = path{:}(end);
+    mytag = str2num(mytag_temp{:});
+end
+
+if(isnan(mytag))
+    parameters_file = 'params.in';
+    results_file = 'results.out';
+else
+    parameters_file = sprintf('params.in.%d',mytag);
+    results_file = sprintf('results.out.%d',mytag);
+end
 
 fid = fopen(parameters_file);
 tline = fgets(fid);
@@ -47,11 +59,13 @@ for ii = 1:num_vars
     a = sscanf(tline, ' %f %s\n');
     var_i = a(1);
     label_i = char(a(2:end).');
-
+    
     if(strcmp(label_i,'alt'))
         altitude = var_i;
     elseif(strcmp(label_i,'mach'))
         mach = var_i;
+    elseif(strcmp(label_i,'f'))
+        control.f = var_i;
     elseif(strcmp(label_i,'bypass'))
         control.bypassRatio = var_i;
     elseif(strcmp(label_i,'fanPstag'))
@@ -98,7 +112,14 @@ if(isnan(mach))
 end
 
 % ----------------------- RUN turbofan simulation ---------------------------
-[ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control );
+try
+    [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control );
+catch ME
+    thrust.total = NaN;
+    sfc = NaN;
+    engine.nozzle.massFlowRate = NaN;
+    thermalEfficiency = NaN;
+end
 
 % Write results to file for Dakota:
 % fid = fopen(results_file,'w');
@@ -107,10 +128,11 @@ end
 
 
 fid = fopen(results_file,'w');
-fprintf(fid,'%f thrust\n',thrust.total);
-fprintf(fid,'%f sfc\n',sfc);
-fprintf(fid,'%f massFlowRate\n',engine.nozzle.massFlowRate);
-fprintf(fid,'%f thermalEfficiency\n',thermalEfficiency);
+fprintf(fid,'%.16e thrust\n',thrust.total);
+fprintf(fid,'%.16e sfc\n',sfc);
+fprintf(fid,'%.16e massFlowRate\n',engine.nozzle.massFlowRate);
+fprintf(fid,'%.16e thermalEfficiency\n',thermalEfficiency);
+fprintf(fid,'%.16e fuelConsumption\n',thrust.total*sfc);
 fclose(fid);
 
 % Turn singular matrix warnings back on.
