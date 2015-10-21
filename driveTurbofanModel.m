@@ -6,8 +6,8 @@
 
 % =========================== SET INPUTS =================================
 
-altitude = 35000; % in feet
-mach = 0.81;
+altitude = 0; % in feet
+mach = 0;
 
 % =================== SET ERROR TOLERANCE RANGES =========================
 % Set error tolerances for various iterations and solvers
@@ -79,3 +79,4 @@ fprintf('thermal efficiency: %f\n',thermalEfficiency);
 fprintf('nozzle is: %s\n',engine.nozzle.status);
 fprintf('nozzle Pstag ratio: %f\n',engine.nozzle.PstagRatio);
 fprintf('nozzle Tstag ratio: %f\n',engine.nozzle.TstagRatio);
+fprintf('fan exit Mach: %f\n',engine.fan.exit.M);
