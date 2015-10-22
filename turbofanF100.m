@@ -86,7 +86,7 @@ turbine.inlet.Tstag = turbine.inlet.TstagLimit;
 if(control.bypassRatio)
     bypassRatio = control.bypassRatio;
 else
-    bypassRatio = 0.6;
+    bypassRatio = 0.62;
 end
 
 if(control.f) % fuel mass fraction ratio
@@ -104,14 +104,14 @@ end
 if(control.fan.efficiency.polytropic)
     fan.efficiency.polytropic = control.fan.efficiency.polytropic;
 else
-    fan.efficiency.polytropic = 0.83; % includes fan for bypass air
+    fan.efficiency.polytropic = 0.84; % includes fan for bypass air
 end
 
 % Compressor
 if(control.compressor.efficiency.polytropic)
     compressor.efficiency.polytropic = control.compressor.efficiency.polytropic;
 else
-    compressor.efficiency.polytropic = 0.87; %0.895 % includes compressor for core air
+    compressor.efficiency.polytropic = 0.87; % includes compressor for core air
 end
 
 if(control.compressor.overallPressureRatio)
@@ -199,7 +199,7 @@ end
 if(control.nozzle.inlet.Abypass2Acore)
     nozzle.inlet.Abypass2Acore = control.nozzle.inlet.Abypass2Acore;
 else
-    nozzle.inlet.Abypass2Acore = 0.2962;
+    nozzle.inlet.Abypass2Acore = 0.4;
 end
 
 if(control.nozzle.inlet.D)
