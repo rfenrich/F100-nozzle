@@ -34,7 +34,7 @@ responses
     nonlinear_inequality_lower_bounds = 0.
     nonlinear_inequality_upper_bounds = 1672.15
     nonlinear_equality_constraints = 1
-    nonlinear_equality_targets = 50000.
+    nonlinear_equality_targets = 60000.
     numerical_gradients
         method_source dakota
         interval_type central
