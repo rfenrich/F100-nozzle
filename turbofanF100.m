@@ -4,8 +4,8 @@ function [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, ma
 % INPUTS:
 % altitude = altitude in ft
 % mach = freestream Mach number
-% control = control structure dictating which parameters are to be 
-%           externally set by the user; if left empty, standard values are 
+% control = control structure dictating which parameters are to be
+%           externally set by the user; if left empty, standard values are
 %           assumed by the program
 % error = structure defining error tolerances for iterations and solvers
 %         for turbofan engine calculations and nozzle calculations; if left
@@ -39,7 +39,7 @@ if(isempty(control))
     control.nozzle.inlet.D = 0;
     control.nozzle.throat.A = 0;
     control.nozzle.geometry.Ainlet2Athroat = 0;
-    control.nozzle.geometry.Aexit2Athroat = 0;    
+    control.nozzle.geometry.Aexit2Athroat = 0;
 end
 
 % If error struct is empty, set reasonable error tolerances
@@ -50,9 +50,9 @@ if(isempty(error))
     error.solver.apparentThroatLocation = 1e-6;
     error.solver.M2relative = 1e-10;
     error.solver.M2absolute = 1e-10;
-    error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime    
+    error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
 end
-    
+
 % ============================== INPUTS ==================================
 
 % Mixing options: 'area-averaged', 'massflow-averaged', 'multistream-samePt'
@@ -70,11 +70,18 @@ freestream.M = mach;
 freestream.U = freestream.M*sqrt(gam*R*freestream.T);
 
 % General engine parameters (found in literature)
-turbine.inlet.TstagLimit = 1672.15; % K, static temperature at turbine inlet
-turbine.inlet.Tstag = turbine.inlet.TstagLimit;
+% turbine.inlet.TstagLimit = 1672.15; % K, static temperature at turbine inlet
+% turbine.inlet.Tstag = turbine.inlet.TstagLimit;
 fuel.enthalpy = 4.28e7; % J/kg, Jet A/B, JP-4, or JP-8
 
 % ------------------------ CONTROLLED INPUTS -----------------------------
+
+if(control.turbine.TstagLimit)
+    turbine.inlet.TstagLimit = control.turbine.TstagLimit;
+else
+    turbine.inlet.TstagLimit = 1672.15; % K, static temperature at turbine inlet
+end
+turbine.inlet.Tstag = turbine.inlet.TstagLimit;
 
 if(control.bypassRatio)
     bypassRatio = control.bypassRatio;
@@ -83,7 +90,7 @@ else
 end
 
 if(control.f) % fuel mass fraction ratio
-    f = control.f; 
+    f = control.f;
 else % f will be calculated later
 end
 
@@ -119,7 +126,7 @@ if(control.burner.PstagRatio)
 else
     burner.PstagRatio = 0.95;
 end
-    
+
 if(control.burner.efficiency)
     burner.efficiency = control.burner.efficiency;
 else
@@ -173,19 +180,19 @@ if(strcmp(nozzle.geometry.shape,'spline'))
         nozzle.geometry.spline.nControlPoints = control.nozzle.geometry.spline.nControlPoints;
     else
         nozzle.geometry.spline.nControlPoints = 3;
-    end 
+    end
     
     if(length(control.nozzle.geometry.spline.controlPointSpacing) == nozzle.geometry.spline.nControlPoints)
         nozzle.geometry.spline.controlPointSpacing = control.nozzle.geometry.spline.controlPointSpacing;
     else
         nozzle.geometry.spline.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]';
-    end   
+    end
     
     if(length(control.nozzle.geometry.spline.slopes) == 2)
         nozzle.geometry.spline.slopes = control.nozzle.geometry.spline.slopes;
     else
         nozzle.geometry.spline.slopes = [0, 0];
-    end    
+    end
     
 end
 
@@ -224,7 +231,7 @@ else
     nozzle.geometry.Ainlet2Athroat = 1.368;
     nozzle.geometry.Aexit2Athroat = 1.4;
     nozzle.throat.A = nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;
-    nozzle.exit.A = nozzle.geometry.Aexit2Athroat*nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;    
+    nozzle.exit.A = nozzle.geometry.Aexit2Athroat*nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;
 end
 
 % ---------------------- GENERAL ENGINE PARAMETERS -----------------------
@@ -313,17 +320,21 @@ counter = 0;
 
 while (abs(errorNozzleInletMach) > tolerance)
     
-    counter = counter + 1; 
-
-    if (strcmp(mixing,'area-averaged')) 
-    % static pressure and temperature area averaged
-
+    counter = counter + 1;
+    
+    if (strcmp(mixing,'area-averaged'))
+        % static pressure and temperature area averaged
+        
         if(counter == 1) % first time around must estimate turbine & fan exit Mach numbers
             fan.exit.M = 0.6; % first guess
             incorrect = 1;
-            while incorrect % iterate fan.exit.M to satisfy mass conservation equation if necessary
-            % Calculate turbine exit Mach number using mass conservation
-            [turbine.exit.M, ~, exitflag] = fzero( @(x) AreaMachFunc(gam,fan.exit.M) - bypassRatio*sqrt(fan.exit.Tstag/turbine.exit.Tstag)*(turbine.exit.Pstag/fan.exit.Pstag)*(1/nozzle.inlet.Abypass2Acore)*AreaMachFunc(gam,x),0.5,options);
+            iter = 0;
+            maxIter = 25;
+            while (incorrect && iter < maxIter) % iterate fan.exit.M to satisfy mass conservation equation if necessary
+                iter = iter + 1;
+                
+                % Calculate turbine exit Mach number using mass conservation
+                [turbine.exit.M, ~, exitflag] = fzero( @(x) AreaMachFunc(gam,fan.exit.M) - bypassRatio*sqrt(fan.exit.Tstag/turbine.exit.Tstag)*(turbine.exit.Pstag/fan.exit.Pstag)*(1/nozzle.inlet.Abypass2Acore)*AreaMachFunc(gam,x),0.5,options);
                 if (exitflag ~= 1)
                     fan.exit.M = fan.exit.M - 0.1; % lower the fan exit Mach
                 else
@@ -331,46 +342,46 @@ while (abs(errorNozzleInletMach) > tolerance)
                 end
             end
         end
-
+        
         turbine.exit.P = turbine.exit.Pstag/(1 + (gam-1)*turbine.exit.M^2/2)^(gam/(gam-1));
         turbine.exit.T = turbine.exit.Tstag/(1 + (gam-1)*turbine.exit.M^2/2);
-
+        
         fan.exit.P = fan.exit.Pstag/(1 + (gam-1)*fan.exit.M^2/2)^(gam/(gam-1));
         fan.exit.T = fan.exit.Tstag/(1 + (gam-1)*fan.exit.M^2/2);
-
+        
         nozzle.inlet.T = (fan.exit.T)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + (turbine.exit.T)*(1/(1 + nozzle.inlet.Abypass2Acore));
-        nozzle.inlet.P = (fan.exit.P)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + (turbine.exit.P)*(1/(1 + nozzle.inlet.Abypass2Acore));    
-
+        nozzle.inlet.P = (fan.exit.P)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + (turbine.exit.P)*(1/(1 + nozzle.inlet.Abypass2Acore));
+        
         if(counter == 1) % first time around, must estimate nozzle inlet Mach number
             nozzle.inlet.M = (fan.exit.M*sqrt(gam*R*fan.exit.T)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + turbine.exit.M*sqrt(gam*R*turbine.exit.T)*(1/(1 + nozzle.inlet.Abypass2Acore)))/sqrt(gam*R*nozzle.inlet.T);
         end
-
+        
         nozzle.inlet.Tstag = (1 + (gam-1)*nozzle.inlet.M^2/2)*nozzle.inlet.T;
         nozzle.inlet.Pstag = (1 + (gam-1)*nozzle.inlet.M^2/2)^(gam/(gam-1))*nozzle.inlet.P;
-
-    elseif (strcmp(mixing,'massflow-averaged')) 
-    % Pt and Tt are averaged by mass flow, ignoring fuel mass flow rate
-
+        
+    elseif (strcmp(mixing,'massflow-averaged'))
+        % Pt and Tt are averaged by mass flow, ignoring fuel mass flow rate
+        
         error('not yet implemented');
         %nozzle.inlet.Tstag = bypassRatio*fan.exit.Tstag/(1 + bypassRatio) + turbine.exit.Tstag/(1 + bypassRatio);
-        %nozzle.inlet.Pstag = bypassRatio*fan.exit.Pstag/(1 + bypassRatio) + turbine.exit.Pstag/(1 + bypassRatio);    
-
-    elseif (strcmp(mixing,'multistream-samePt')) 
-    % bypass and core streams do not mix, but both exit through same nozzle; 
-    % same static pressure at bypass duct and turbine exits
-
+        %nozzle.inlet.Pstag = bypassRatio*fan.exit.Pstag/(1 + bypassRatio) + turbine.exit.Pstag/(1 + bypassRatio);
+        
+    elseif (strcmp(mixing,'multistream-samePt'))
+        % bypass and core streams do not mix, but both exit through same nozzle;
+        % same static pressure at bypass duct and turbine exits
+        
         error('not yet implemented');
-
+        
     end
-
+    
     % ------------------------------ NOZZLE ----------------------------------
-
+    
     %[ nozzleFlow, nozzle, xPosition ] = nozzleIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle);
     %nozzle.PstagRatio = 0.97;
     [ nozzle ] = nozzleNonIdeal( struct('gam',gam,'R',R), freestream, nozzle, 400, error);
     errorNozzleInletMach = (nozzle.flow.M(1) - nozzle.inlet.M)/nozzle.flow.M(1);
     %fprintf('%% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
-
+    
     % Set new nozzle inlet Mach number
     nozzle.inlet.M = nozzle.flow.M(1);
     options = optimset('TolFun',error.solver.inletMach,'Display','none');
@@ -382,7 +393,7 @@ while (abs(errorNozzleInletMach) > tolerance)
         fprintf('! Nozzle inlet Mach number not converged.\n');
         break;
     end
-
+    
 end
 
 % Produce warning if the unnatural/unfeasible happens, i.e. supersonic flow
@@ -472,20 +483,20 @@ engine.nozzle = nozzle;
 %
 % formatPlot;
 
-function [ ftemp ] = FanTurbineExitMachFunc( itemp )
-    % Provides system of 2 equations to be solved for fan and turbine exit
-    % Mach number
-
-    fanExitMach = itemp(1);
-    turbineExitMach = itemp(2);
-    fanExitT = fan.exit.Tstag/(1 + (gam-1)*fan.exit.M^2/2);
-    turbineExitT = turbine.exit.Tstag/(1 + (gam-1)*turbine.exit.M^2/2);
-    nozzleInletT = (fanExitT)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + (turbineExitT)*(1/(1 + nozzle.inlet.Abypass2Acore));
-    
-    ftemp(1) = AreaMachFunc(gam,fanExitMach) - bypassRatio*sqrt(fan.exit.Tstag/turbine.exit.Tstag)*(turbine.exit.Pstag/fan.exit.Pstag)*(1/nozzle.inlet.Abypass2Acore)*AreaMachFunc(gam,turbineExitMach);
-    ftemp(2) = (fanExitMach*sqrt(gam*R*fanExitT)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + turbineExitMach*sqrt(gam*R*turbineExitT)*(1/(1 + nozzle.inlet.Abypass2Acore)))/sqrt(gam*R*nozzleInletT) - nozzle.inlet.M;
-    
-end
+    function [ ftemp ] = FanTurbineExitMachFunc( itemp )
+        % Provides system of 2 equations to be solved for fan and turbine exit
+        % Mach number
+        
+        fanExitMach = itemp(1);
+        turbineExitMach = itemp(2);
+        fanExitT = fan.exit.Tstag/(1 + (gam-1)*fan.exit.M^2/2);
+        turbineExitT = turbine.exit.Tstag/(1 + (gam-1)*turbine.exit.M^2/2);
+        nozzleInletT = (fanExitT)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + (turbineExitT)*(1/(1 + nozzle.inlet.Abypass2Acore));
+        
+        ftemp(1) = AreaMachFunc(gam,fanExitMach) - bypassRatio*sqrt(fan.exit.Tstag/turbine.exit.Tstag)*(turbine.exit.Pstag/fan.exit.Pstag)*(1/nozzle.inlet.Abypass2Acore)*AreaMachFunc(gam,turbineExitMach);
+        ftemp(2) = (fanExitMach*sqrt(gam*R*fanExitT)*(nozzle.inlet.Abypass2Acore/(1 + nozzle.inlet.Abypass2Acore)) + turbineExitMach*sqrt(gam*R*turbineExitT)*(1/(1 + nozzle.inlet.Abypass2Acore)))/sqrt(gam*R*nozzleInletT) - nozzle.inlet.M;
+        
+    end
 
 end
 

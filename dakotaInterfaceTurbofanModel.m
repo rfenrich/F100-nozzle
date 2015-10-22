@@ -115,6 +115,8 @@ for ii = 1:num_vars
 end
 fclose(fid);
 
+control.turbine.TstagLimit = Inf;
+
 % Set error tolerances for various iterations and solvers
 error.betweenIterations.inletMach = 1e-10;
 error.solver.inletMach = 1e-8;
@@ -145,6 +147,7 @@ catch ME
     sfc = NaN;
     engine.nozzle.massFlowRate = NaN;
     thermalEfficiency = NaN;
+    engine.turbine.inlet.Tstag = NaN;
 end
 
 % Write results to file for Dakota:
@@ -157,7 +160,7 @@ fprintf(fid,'%.16e thrust\n',thrust.total);
 fprintf(fid,'%.16e sfc\n',sfc);
 fprintf(fid,'%.16e massFlowRate\n',engine.nozzle.massFlowRate);
 fprintf(fid,'%.16e thermalEfficiency\n',thermalEfficiency);
-fprintf(fid,'%.16e fuelConsumption\n',thrust.total*sfc);
+fprintf(fid,'%.16e turbineTstag\n',engine.turbine.inlet.Tstag);
 fclose(fid);
 
 % Turn singular matrix warnings back on.
