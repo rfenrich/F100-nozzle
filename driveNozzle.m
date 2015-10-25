@@ -41,7 +41,7 @@ end
 
 % ------------------- SET ERROR TOLERANCE RANGES -------------------------
 % Set error tolerances for various iterations and solvers
-error.betweenIterations.exitTemp = 1e-6;
+error.betweenIterations.exitTemp = 1e-8;
 error.solver.apparentThroatLocation = 1e-6;
 error.solver.M2relative = 1e-10;
 error.solver.M2absolute = 1e-10;
@@ -70,6 +70,25 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     nozzle.geometry.spline.nControlPoints = 3;
     nozzle.geometry.spline.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]'; %'regular';
     nozzle.geometry.spline.slopes = [0, 0];
+end
+
+% -------------------- SET NOZZLE WALL GEOMETRY --------------------------
+nozzle.wall.shape = 'piecewise-linear'; % options include 'uniform' and 'piecewise-linear'
+nozzle.wall.inlet.thickness = 0.01; % m
+nozzle.wall.outlet.thickness = 0.01; % m
+if(strcmp(nozzle.wall.shape,'piecewise-linear'))
+    % To parameterize using piece-wise linear functions, the following must 
+    % be provided:
+    % nozzle.wall.seed = either a shape already defined in the
+    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
+    % denote the location of the control points with the origin being at
+    % the center of the inlet area
+    % nozzle.wall.nControlPoints = number of control points
+    % nozzle.wall.controlPointSpacing = either 'regular' where control
+    % points will be evenly spaced or a vector giving the x-location
+    nozzle.wall.seed = [0, nozzle.wall.inlet.thickness; nozzle.geometry.xThroat, nozzle.wall.inlet.thickness; nozzle.geometry.length, nozzle.wall.outlet.thickness];
+    nozzle.wall.nControlPoints = 3;
+    nozzle.wall.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]'; %'regular';
 end
 
 % --------------------- FLUID INPUT PROPERTIES ---------------------------
