@@ -54,7 +54,6 @@ nozzle.geometry.Ainlet2Athroat = 1.368; % area ratio of inlet to throat
 nozzle.geometry.Aexit2Athroat = 1.4; % area ratio of exit to throat
 nozzle.geometry.length = 1; % m
 nozzle.geometry.xThroat = 0.33; % m, location of throat from inlet
-nozzle.geometry.xExit = nozzle.geometry.length;
 if(strcmp(nozzle.geometry.shape,'spline'))
     % To parameterize using a spline, the following must be provided:
     % nozzle.spline.seed = either a shape already defined in the
@@ -62,34 +61,31 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     % denote the location of the control points with the origin being at
     % the center of the inlet area
     % nozzle.spline.nControlPoints = number of control points
-    % nozzle.spline.controlPointSpacing = either 'regular' where control
-    % points will be evenly spaced or a vector giving the x-location
+    % nozzle.spline.breaks = a vector giving the x-location of
+    %                                     control points
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
     nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
-    nozzle.geometry.spline.nControlPoints = 3;
-    nozzle.geometry.spline.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]'; %'regular';
+    nozzle.geometry.spline.breaks = ...
+            [0;
+            nozzle.geometry.xThroat;
+            nozzle.geometry.length];
     nozzle.geometry.spline.slopes = [0, 0];
 end
 
 % -------------------- SET NOZZLE WALL GEOMETRY --------------------------
-nozzle.wall.shape = 'piecewise-linear'; % options include 'uniform' and 'piecewise-linear'
-nozzle.wall.inlet.thickness = 0.01; % m
-nozzle.wall.outlet.thickness = 0.01; % m
-if(strcmp(nozzle.wall.shape,'piecewise-linear'))
-    % To parameterize using piece-wise linear functions, the following must 
-    % be provided:
-    % nozzle.wall.seed = either a shape already defined in the
-    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
-    % denote the location of the control points with the origin being at
-    % the center of the inlet area
-    % nozzle.wall.nControlPoints = number of control points
-    % nozzle.wall.controlPointSpacing = either 'regular' where control
-    % points will be evenly spaced or a vector giving the x-location
-    nozzle.wall.seed = [0, nozzle.wall.inlet.thickness; nozzle.geometry.xThroat, nozzle.wall.inlet.thickness; nozzle.geometry.length, nozzle.wall.outlet.thickness];
-    nozzle.wall.nControlPoints = 3;
-    nozzle.wall.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]'; %'regular';
-end
+nozzle.wall.shape = 'piecewise-linear';
+% nozzle.wall.seed = an array of the form [x; y] where [x,y]
+% denote the location of the control points with the origin being at
+% the center of the inlet area
+% nozzle.wall.breaks = vector giving location of breaks in piecewise
+% function
+nozzle.wall.seed = [0, 0.01; 
+                    nozzle.geometry.xThroat, 0.01; 
+                    nozzle.geometry.length, 0.01];
+nozzle.wall.breaks = [0;
+                      nozzle.geometry.xThroat;
+                      nozzle.geometry.length];
 
 % --------------------- FLUID INPUT PROPERTIES ---------------------------
 fluid.gam = 1.4; % ratio of specific heats
@@ -122,7 +118,9 @@ set(groot,'defaultAxesColorOrder',[0 0 0; 1 0 0; 1 0.25 0; 0 1 0; 0 0 1])
 figure
 subplot(2,3,1); hold on
 plot(nozzle.xPosition,nozzle.geometry.D/2)
-plot(nozzle.xPosition,-nozzle.geometry.D/2)
+plot(nozzle.xPosition,nozzle.geometry.D/2+nozzle.wall.t);
+plot(nozzle.xPosition,-nozzle.geometry.D/2);
+plot(nozzle.xPosition,-nozzle.geometry.D/2-nozzle.wall.t);
 title('Geometry')
 axis equal
 

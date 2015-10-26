@@ -52,29 +52,18 @@ end
 % Calculate pressure ratio which determines state of nozzle:
 pressureRatio = inlet.Pstag/freestream.P;
 
-% ========================== NOZZLE GEOMETRY =============================
-
 if(strcmp(nozzle.geometry.shape,'spline'))
     % set up spline for nozzle
     if(ischar(nozzle.geometry.spline.seed)) % seed shape is given
-        % Create nozzle geometry from which splines should be based:
-        Dseed = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.spline.seed);
         % Set control points for splines (xNode), value of function at control
         % point (yNode), and slopes at start and end of spline (slopes)
-        if(strcmp(nozzle.geometry.spline.controlPointSpacing,'regular'))
-            xNode = linspace(0,nozzle.geometry.length,nozzle.geometry.spline.nControlPoints)';
-            nozzle.geometry.spline.controlPointSpacing = xNode;
-        elseif(length(nozzle.geometry.spline.controlPointSpacing) == nozzle.geometry.spline.nControlPoints)
-            xNode = nozzle.geometry.spline.controlPointSpacing;
-            if(max(xNode) > nozzle.geometry.length || min(xNode) < 0) % check user given location of control points
-                error('Spline control point outside nozzle length domain');
-            end
-        else
-            error('Incorrect nozzle spline spacing given.');
+        xNode = nozzle.geometry.spline.breaks;
+        if(max(xNode) > nozzle.geometry.length || min(xNode) < 0) % check user given location of control points
+            error('Spline control point outside nozzle length domain');
         end
-        yNode = Dseed(xNode)/2;
+        yNode = nozzleGeometry(xNode,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.spline.seed)/2;
         nozzle.geometry.spline.seed = [xNode, yNode];
-    elseif(numel(nozzle.geometry.spline.seed) == 2*nozzle.geometry.spline.nControlPoints)
+    else
         % Extract control points for splines and their values from the
         % given array
         xNode = nozzle.geometry.spline.seed(:,1);
@@ -86,8 +75,6 @@ if(strcmp(nozzle.geometry.shape,'spline'))
                error('Spline control point values do not match given nozzle area ratios'); 
             end
         end
-    else
-        error('Incorrect nozzle spline seed given.')
     end
     
     slopes = nozzle.geometry.spline.slopes;
@@ -107,14 +94,16 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     A = @(x) splineGeometry(x,'A',pp);
     dAdx = @(x) splineGeometry(x,'dAdx',pp);
     D = @(x) splineGeometry(x,'D',pp);
-    t = @(x) splineGeometry(x,'t',pp); % m, thickness of wall
 
 else % if nozzle shape is not a spline
     A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
     dAdx = @(x) nozzleGeometry(x,'dAdx',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
     D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
-    t = @(x) nozzleGeometry(x,'t',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape); % m, thickness of wall
 end
+
+% ======================= NOZZLE WALL GEOMETRY ===========================
+% Only piecewise-linear geometry is enabled thus far
+t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall); % m, thickness of wall
 
 % ======================= DETERMINE NOZZLE FLOW ==========================
 options.Display='none'; % used for fsolve
@@ -145,7 +134,7 @@ elseif (pressureRatio < exit.normalShock.PtRatio)
     nozzle.PstagRatio = nozzle.throat.A/nozzle.exit.A/AreaMachFunc(gam,exit.M);
     shock.M = fsolve( @(x) (((gam+1)*x^2/2)/(1 + (gam-1)*x^2/2))^(gam/(gam-1))*(((gam+1)/2)/(gam*x^2 - (gam-1)/2))^(1/(gam-1)) - nozzle.PstagRatio,2,options);
     shock.A = nozzle.throat.A/AreaMachFunc(gam,shock.M);
-    shock.x = fsolve( @(x) A(x) - shock.A, (nozzle.geometry.xExit + nozzle.geometry.xThroat)/2, options);
+    shock.x = fsolve( @(x) A(x) - shock.A, (nozzle.geometry.length + nozzle.geometry.xThroat)/2, options);
     shockInNozzle = true;
 elseif (pressureRatio < exit.critical.PtRatioSupersonic - deltaPtRatio)
     %fprintf('ideal: Overexpanded flow\n');
@@ -171,10 +160,10 @@ options.RelTol = error.solver.M2relative;
 options.AbsTol = error.solver.M2absolute;
 % Solve using 4th-order Runge-Kutta method
 if (strcmp(nozzle.status,'subsonic')) % subsonic flow throughout nozzle
-    dM2dxSubsonic = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.geometry.xExit-x)./A(nozzle.geometry.xExit-x));
+    dM2dxSubsonic = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.geometry.length-x)./A(nozzle.geometry.length-x));
                              
-    [xPosition,M2] = ode45(dM2dxSubsonic,[0 nozzle.geometry.xExit],exit.M^2,options);
-    xPosition = -flipud(xPosition) + nozzle.geometry.xExit;
+    [xPosition,M2] = ode45(dM2dxSubsonic,[0 nozzle.geometry.length],exit.M^2,options);
+    xPosition = -flipud(xPosition) + nozzle.geometry.length;
     M2 = flipud(M2);
 elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
     
@@ -182,7 +171,7 @@ elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
     LowerM = 0.999999; % start integration at this Mach number for fore portion of nozzle
     
     % Solve using 4th-order Runge-Kutta method
-    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 nozzle.geometry.xExit-nozzle.geometry.xThroat],UpperM,options);
+    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 nozzle.geometry.length-nozzle.geometry.xThroat],UpperM,options);
     [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.geometry.xThroat],LowerM,options);
     
     % Combine both parts of problem
@@ -197,7 +186,7 @@ else % sub and supersonic flow, shock in nozzle
     [xPositionPost,M2Post] = ode45(dM2dxPost,[0 shock.x - nozzle.geometry.xThroat],UpperM,options);
     MbehindShock = sqrt((1 + (gam-1)*shock.M^2/2)/(gam*shock.M^2 - (gam-1)/2));
     shock.PtRatio = nozzle.PstagRatio;
-    [xPositionPostShock,M2PostShock] = ode45(dM2dxPostShock,[1e-8 nozzle.geometry.xExit-shock.x],MbehindShock^2,options);
+    [xPositionPostShock,M2PostShock] = ode45(dM2dxPostShock,[1e-8 nozzle.geometry.length-shock.x],MbehindShock^2,options);
     [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.geometry.xThroat],LowerM,options);
     
     % Combine both parts of problem
@@ -245,6 +234,12 @@ nozzle.xPosition = xPosition;
 nozzle.geometry.A = A(xPosition);
 nozzle.geometry.dAdx = dAdx(xPosition);
 nozzle.geometry.D = D(xPosition);
-nozzle.geometry.t = t(xPosition);
+nozzle.wall.t = t(xPosition);
+
+% =================== CALC NOZZLE MATERIAL VOLUME ========================
+
+% Volume calculation only works for spline parameterized nozzle geometry
+% and piecewise-linear parameterized nozzle wall thickness
+nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
 
 end

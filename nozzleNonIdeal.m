@@ -66,24 +66,15 @@ pressureRatio = inlet.Pstag/freestream.P;
 if(strcmp(nozzle.geometry.shape,'spline'))
     % set up spline for nozzle
     if(ischar(nozzle.geometry.spline.seed)) % seed shape is given
-        % Create nozzle geometry from which splines should be based:
-        Dseed = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.spline.seed);
         % Set control points for splines (xNode), value of function at control
         % point (yNode), and slopes at start and end of spline (slopes)
-        if(strcmp(nozzle.geometry.spline.controlPointSpacing,'regular'))
-            xNode = linspace(0,nozzle.geometry.length,nozzle.geometry.spline.nControlPoints)';
-            nozzle.geometry.spline.controlPointSpacing = xNode;
-        elseif(length(nozzle.geometry.spline.controlPointSpacing) == nozzle.geometry.spline.nControlPoints)
-            xNode = nozzle.geometry.spline.controlPointSpacing;
-            if(max(xNode) > nozzle.geometry.length || min(xNode) < 0) % check user given location of control points
-                error('Spline control point outside nozzle length domain');
-            end
-        else
-            error('Incorrect nozzle spline spacing given.');
+        xNode = nozzle.geometry.spline.breaks;
+        if(max(xNode) > nozzle.geometry.length || min(xNode) < 0) % check user given location of control points
+            error('Spline control point outside nozzle length domain');
         end
-        yNode = Dseed(xNode)/2;
+        yNode = nozzleGeometry(xNode,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.spline.seed)/2;
         nozzle.geometry.spline.seed = [xNode, yNode];
-    elseif(numel(nozzle.geometry.spline.seed) == 2*nozzle.geometry.spline.nControlPoints)
+    else
         % Extract control points for splines and their values from the
         % given array
         xNode = nozzle.geometry.spline.seed(:,1);
@@ -95,8 +86,6 @@ if(strcmp(nozzle.geometry.shape,'spline'))
                error('Spline control point values do not match given nozzle area ratios'); 
             end
         end
-    else
-        error('Incorrect nozzle spline seed given.')
     end
     
     slopes = nozzle.geometry.spline.slopes;
@@ -116,78 +105,16 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     A = @(x) splineGeometry(x,'A',pp);
     dAdx = @(x) splineGeometry(x,'dAdx',pp);
     D = @(x) splineGeometry(x,'D',pp);
-    t = @(x) splineGeometry(x,'t',pp); % m, thickness of wall
 
 else % if nozzle shape is not a spline
     A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
     dAdx = @(x) nozzleGeometry(x,'dAdx',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
     D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
-    t = @(x) nozzleGeometry(x,'t',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape); % m, thickness of wall
 end
 
 % ======================= NOZZLE WALL GEOMETRY ===========================
-
-if(strcmp(nozzle.geometry.shape,'spline'))
-    % set up spline for nozzle
-    if(ischar(nozzle.geometry.spline.seed)) % seed shape is given
-        % Create nozzle geometry from which splines should be based:
-        Dseed = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.spline.seed);
-        % Set control points for splines (xNode), value of function at control
-        % point (yNode), and slopes at start and end of spline (slopes)
-        if(strcmp(nozzle.geometry.spline.controlPointSpacing,'regular'))
-            xNode = linspace(0,nozzle.geometry.length,nozzle.geometry.spline.nControlPoints)';
-            nozzle.geometry.spline.controlPointSpacing = xNode;
-        elseif(length(nozzle.geometry.spline.controlPointSpacing) == nozzle.geometry.spline.nControlPoints)
-            xNode = nozzle.geometry.spline.controlPointSpacing;
-            if(max(xNode) > nozzle.geometry.length || min(xNode) < 0) % check user given location of control points
-                error('Spline control point outside nozzle length domain');
-            end
-        else
-            error('Incorrect nozzle spline spacing given.');
-        end
-        yNode = Dseed(xNode)/2;
-        nozzle.geometry.spline.seed = [xNode, yNode];
-    elseif(numel(nozzle.geometry.spline.seed) == 2*nozzle.geometry.spline.nControlPoints)
-        % Extract control points for splines and their values from the
-        % given array
-        xNode = nozzle.geometry.spline.seed(:,1);
-        yNode = nozzle.geometry.spline.seed(:,2);
-        if(xNode(1) == 0 && xNode(end) == nozzle.geometry.length) % check user given control point values (yNode) match user given area ratios
-            areaRatio = yNode(end)^2/yNode(1)^2;
-            areaRatioTolerance = 1e-3;
-            if(areaRatio > nozzle.geometry.Aexit2Athroat/nozzle.geometry.Ainlet2Athroat + areaRatioTolerance || areaRatio < nozzle.geometry.Aexit2Athroat/nozzle.geometry.Ainlet2Athroat - areaRatioTolerance)
-               error('Spline control point values do not match given nozzle area ratios'); 
-            end
-        end
-    else
-        error('Incorrect nozzle spline seed given.')
-    end
-    
-    slopes = nozzle.geometry.spline.slopes;
-    pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
-    
-    % Adjust nozzle throat size/location information if it has changed
-    [xThroat, yThroat] = splineGeometry(0, 'throat', pp);
-    if(xThroat ~= nozzle.geometry.xThroat)
-        fprintf('throat size/location changed with spline parameterization\n');
-    end
-    nozzle.geometry.xThroat = xThroat;
-    nozzle.throat.A = pi*yThroat^2;
-    nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
-    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
-
-    % Make necessary functions for splined nozzle shape
-    A = @(x) splineGeometry(x,'A',pp);
-    dAdx = @(x) splineGeometry(x,'dAdx',pp);
-    D = @(x) splineGeometry(x,'D',pp);
-    t = @(x) splineGeometry(x,'t',pp); % m, thickness of wall
-
-else % if nozzle shape is not a spline
-    A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
-    dAdx = @(x) nozzleGeometry(x,'dAdx',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
-    D = @(x) nozzleGeometry(x,'D',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
-    t = @(x) nozzleGeometry(x,'t',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape); % m, thickness of wall
-end
+% Only piecewise-linear geometry is enabled thus far
+t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall); % m, thickness of wall
 
 % ========================= THERMAL PROPERTIES ===========================
 % Uncomment the following if you want Pr, conductivity k, and Cp to change
@@ -235,7 +162,7 @@ elseif (pressureRatio < exit.normalShock.PtRatio)
     nozzle.PtRatio = nozzle.throat.A/nozzle.exit.A/AreaMachFunc(gam,exit.M);
     shock.M = fsolve( @(x) (((gam+1)*x^2/2)/(1 + (gam-1)*x^2/2))^(gam/(gam-1))*(((gam+1)/2)/(gam*x^2 - (gam-1)/2))^(1/(gam-1)) - nozzle.PtRatio,2,options);
     shock.A = nozzle.throat.A/AreaMachFunc(gam,shock.M);
-    shock.x = fsolve( @(x) A(x) - shock.A, (nozzle.geometry.xExit + nozzle.geometry.xThroat)/2, options);
+    shock.x = fsolve( @(x) A(x) - shock.A, (nozzle.geometry.length + nozzle.geometry.xThroat)/2, options);
     shockInNozzle = true;
     fprintf('WARNING: Shock in nozzle not enabled for non-ideal nozzle.\n');
 elseif (pressureRatio < exit.critical.PtRatioSupersonic - deltaPtRatio)
@@ -256,7 +183,7 @@ dTstagdx = @(x) 0*x;
 Tstag = @(x) inlet.Tstag;
 Cf = @(x) 0.002;
 
-xPositionOld = [0; nozzle.geometry.xExit];
+xPositionOld = [0; nozzle.geometry.length];
 flow.Tstag = [inlet.Tstag; inlet.Tstag];
 
 converged = false;
@@ -271,19 +198,19 @@ while ~converged
     
     % ========================== SOLVE 1-D E.O.M =============================
     if (strcmp(nozzle.status,'ideal: subsonic')) % Subsonic flow present in nozzle
-        dM2dxSubsonic = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.geometry.xExit-x)./A(nozzle.geometry.xExit-x) + 2*gam*M2*Cf(nozzle.geometry.xExit-x)./D(nozzle.geometry.xExit-x) + (1+gam*M2)*dTstagdx(nozzle.geometry.xExit-x)./(2*Tstag(nozzle.geometry.xExit-x)));
+        dM2dxSubsonic = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.geometry.length-x)./A(nozzle.geometry.length-x) + 2*gam*M2*Cf(nozzle.geometry.length-x)./D(nozzle.geometry.length-x) + (1+gam*M2)*dTstagdx(nozzle.geometry.length-x)./(2*Tstag(nozzle.geometry.length-x)));
         
         % ODE solver options
         options.RelTol = 1e-8;
         options.AbsTol = 1e-8;
         
         % Solve using 4th-order Runge-KuTstaga method
-        [xPosition,M2] = ode45(dM2dxSubsonic,[0 nozzle.geometry.xExit],exit.M^2,options);
+        [xPosition,M2] = ode45(dM2dxSubsonic,[0 nozzle.geometry.length],exit.M^2,options);
 
-        xPosition = -flipud(xPosition) + nozzle.geometry.xExit;
+        xPosition = -flipud(xPosition) + nozzle.geometry.length;
         M2 = flipud(M2);
 
-        PstagExit = inlet.Pstag*(nozzle.inlet.A/nozzle.exit.A).*(AreaMachFunc(gam,sqrt(M2(1)))./AreaMachFunc(gam,exit.M)).*sqrt(Tstag(nozzle.geometry.xExit)/inlet.Tstag); % stagnation pressure from mass conservation
+        PstagExit = inlet.Pstag*(nozzle.inlet.A/nozzle.exit.A).*(AreaMachFunc(gam,sqrt(M2(1)))./AreaMachFunc(gam,exit.M)).*sqrt(Tstag(nozzle.geometry.length)/inlet.Tstag); % stagnation pressure from mass conservation
         Pexit = PstagExit/(1 + (gam-1)*M2(end)/2).^(gam/(gam-1));
         
         fprintf('! Subsonic calculations for non-ideal nozzle not set up correctly yet\n');
@@ -354,7 +281,7 @@ while ~converged
         options.RelTol = error.solver.M2relative;
         options.AbsTol = error.solver.M2absolute;
         % Solve using 4th-order Runge-Kutta method
-        [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.geometry.xExit - nozzle.geometry.xApparentThroat],UpperM.^2,options);
+        [xPositionPost,M2Post] = ode45(dM2dxPost,[(UpperM-1)/dMdx nozzle.geometry.length - nozzle.geometry.xApparentThroat],UpperM.^2,options);
         [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[(1-LowerM)/dMdx nozzle.geometry.xApparentThroat],LowerM.^2,options);
         
         % Combine both parts of problem
@@ -427,8 +354,8 @@ while ~converged
     end
     
     % Check tolerance on static temperature at nozzle exit
-    percentError = abs(T(nozzle.geometry.xExit)-Texit_old)/T(nozzle.geometry.xExit);
-    Texit_old = T(nozzle.geometry.xExit);
+    percentError = abs(T(nozzle.geometry.length)-Texit_old)/T(nozzle.geometry.length);
+    Texit_old = T(nozzle.geometry.length);
     if(percentError < tolerance)
         converged = true;
         fprintf('iter to converge non-ideal nozzle heat xfer & friction calcs\n');
@@ -454,7 +381,13 @@ nozzle.xPosition = xPosition;
 nozzle.geometry.A = A(xPosition);
 nozzle.geometry.dAdx = dAdx(xPosition);
 nozzle.geometry.D = D(xPosition);
-nozzle.geometry.t = t(xPosition);
+nozzle.wall.t = t(xPosition);
+
+% =================== CALC NOZZLE MATERIAL VOLUME ========================
+
+% Volume calculation only works for spline parameterized nozzle geometry
+% and piecewise-linear parameterized nozzle wall thickness
+nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
 
 end
 

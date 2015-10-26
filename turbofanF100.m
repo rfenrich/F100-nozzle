@@ -149,10 +149,8 @@ end
 
 if(control.nozzle.geometry.length)
     nozzle.geometry.length = control.nozzle.geometry.length;
-    nozzle.geometry.xExit = nozzle.geometry.length;
 else
     nozzle.geometry.length = 1;
-    nozzle.geometry.xExit = nozzle.geometry.length;
 end
 
 if(control.nozzle.geometry.xThroat)
@@ -161,7 +159,7 @@ else
     nozzle.geometry.xThroat = nozzle.geometry.length/3;
 end
 
-if(strcmp(nozzle.geometry.shape,'spline'))
+if(strcmp(control.nozzle.geometry.shape,'spline'))
     
     if(control.nozzle.geometry.spline.seed)
         nozzle.geometry.spline.seed = control.nozzle.geometry.spline.seed;
@@ -169,16 +167,13 @@ if(strcmp(nozzle.geometry.shape,'spline'))
         nozzle.geometry.spline.seed = 'linear';
     end
     
-    if(control.nozzle.geometry.spline.nControlPoints)
-        nozzle.geometry.spline.nControlPoints = control.nozzle.geometry.spline.nControlPoints;
+    if(control.nozzle.geometry.spline.breaks)
+        nozzle.geometry.spline.breaks = control.nozzle.geometry.spline.breaks;
     else
-        nozzle.geometry.spline.nControlPoints = 3;
-    end 
-    
-    if(length(control.nozzle.geometry.spline.controlPointSpacing) == nozzle.geometry.spline.nControlPoints)
-        nozzle.geometry.spline.controlPointSpacing = control.nozzle.geometry.spline.controlPointSpacing;
-    else
-        nozzle.geometry.spline.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]';
+        nozzle.geometry.spline.breaks = ...
+            [0;
+            nozzle.geometry.xThroat;
+            nozzle.geometry.length];
     end   
     
     if(length(control.nozzle.geometry.spline.slopes) == 2)
@@ -225,6 +220,29 @@ else
     nozzle.geometry.Aexit2Athroat = 1.4;
     nozzle.throat.A = nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;
     nozzle.exit.A = nozzle.geometry.Aexit2Athroat*nozzle.inlet.A/nozzle.geometry.Ainlet2Athroat;    
+end
+
+if(strcmp(control.nozzle.wall.shape,'piecewise-linear'))
+    
+    nozzle.wall.shape = control.nozzle.wall.shape;
+    
+    if(control.nozzle.wall.seed)
+        nozzle.wall.seed = control.nozzle.wall.seed;
+    else
+        nozzle.wall.seed = [0, 0.01; 
+                    nozzle.geometry.xThroat, 0.01; 
+                    nozzle.geometry.length, 0.01];
+    end
+    
+    if(control.nozzle.wall.breaks)
+        nozzle.wall.breaks = control.nozzle.wall.breaks;
+    else
+        nozzle.wall.breaks = ...
+            [0;
+            nozzle.geometry.xThroat;
+            nozzle.geometry.length];
+    end   
+    
 end
 
 % ---------------------- GENERAL ENGINE PARAMETERS -----------------------
