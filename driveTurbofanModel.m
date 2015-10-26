@@ -34,6 +34,7 @@ control.compressor.efficiency.polytropic = 0;
 control.compressor.overallPressureRatio = 0;
 control.burner.PstagRatio = 0;
 control.burner.efficiency = 0;
+control.turbine.TstagLimit = 0;
 control.turbine.efficiency.polytropic = 0;
 control.turbine.efficiency.shaft = 0;
 

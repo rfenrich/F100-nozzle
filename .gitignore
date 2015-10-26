@@ -1,6 +1,10 @@
 # Ignore Dakota restart files:
-dakota.rst
+dakota.rst*
 *~
 dakota/*.out
 dakota/*.stdout
 dakota/*.dat
+dakota/*.pdf
+dakota/docs/*
+dakota/output/*
+dakota/plots/*.pdf
