@@ -6,8 +6,8 @@
 
 % =========================== SET INPUTS =================================
 
-altitude = 0; % in feet
-mach = 0;
+altitude = 35000; % in feet
+mach = 0.9;
 
 % =================== SET ERROR TOLERANCE RANGES =========================
 % Set error tolerances for various iterations and solvers
@@ -50,14 +50,15 @@ if(strcmp(control.nozzle.geometry.shape,'spline'))
     % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
     % denote the location of the control points with the origin being at
     % the center of the inlet area
-    % nozzle.spline.nControlPoints = number of control points
     % nozzle.spline.controlPointSpacing = either 'regular' where control
     % points will be evenly spaced or a vector giving the x-location
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
     control.nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
-    control.nozzle.geometry.spline.nControlPoints = 3;
-    control.nozzle.geometry.spline.controlPointSpacing = [0 control.nozzle.geometry.xThroat control.nozzle.geometry.length]'; % 'regular';
+    control.nozzle.geometry.spline.breaks = ...
+            [0;
+            control.nozzle.geometry.xThroat;
+            control.nozzle.geometry.length];
     control.nozzle.geometry.spline.slopes = [0, 0];
 end
 
@@ -65,9 +66,23 @@ control.nozzle.inlet.Abypass2Acore = 0;
 control.nozzle.inlet.D = 0; % m
 control.nozzle.throat.A = 0; % m^2
 
-control.nozzle.geometry.Ainlet2Athroat = 1.368;
-control.nozzle.geometry.Aexit2Athroat = 1.4;
+control.nozzle.geometry.Ainlet2Athroat = 0;
+control.nozzle.geometry.Aexit2Athroat = 0;
 
+% -------------------- SET NOZZLE WALL GEOMETRY --------------------------
+control.nozzle.wall.shape = 'piecewise-linear';
+% nozzle.wall.seed = an array of the form [x; y] where [x,y]
+% denote the location of the control points with the origin being at
+% the center of the inlet area
+% nozzle.wall.breaks = vector giving location of breaks in piecewise
+% function
+control.nozzle.wall.seed = [0, 0.01; 
+                    control.nozzle.geometry.xThroat, 0.01; 
+                    control.nozzle.geometry.length, 0.01];
+control.nozzle.wall.breaks = [0;
+                      control.nozzle.geometry.xThroat;
+                      control.nozzle.geometry.length];
+                 
 % ----------------------- RUN SIMPLE TEST CASE ---------------------------
 tic
 [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control, error );

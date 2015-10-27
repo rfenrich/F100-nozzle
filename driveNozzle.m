@@ -9,7 +9,8 @@
 % ========================== INPUT PARAMETERS ============================
 
 mission = 1; % mission number for which certain input parameters are defined below
-hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
+nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
+nozzle.wall.k = 30; % W/m*K, thermal conductivity of nozzle wall
 
 % Define input parameters that will change based on flight regime:
 if(mission == 1) % static sea-level thrust case
@@ -41,7 +42,7 @@ end
 
 % ------------------- SET ERROR TOLERANCE RANGES -------------------------
 % Set error tolerances for various iterations and solvers
-error.betweenIterations.exitTemp = 1e-6;
+error.betweenIterations.exitTemp = 1e-8;
 error.solver.apparentThroatLocation = 1e-6;
 error.solver.M2relative = 1e-10;
 error.solver.M2absolute = 1e-10;
@@ -54,7 +55,6 @@ nozzle.geometry.Ainlet2Athroat = 1.368; % area ratio of inlet to throat
 nozzle.geometry.Aexit2Athroat = 1.4; % area ratio of exit to throat
 nozzle.geometry.length = 1; % m
 nozzle.geometry.xThroat = 0.33; % m, location of throat from inlet
-nozzle.geometry.xExit = nozzle.geometry.length;
 if(strcmp(nozzle.geometry.shape,'spline'))
     % To parameterize using a spline, the following must be provided:
     % nozzle.spline.seed = either a shape already defined in the
@@ -62,15 +62,31 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     % denote the location of the control points with the origin being at
     % the center of the inlet area
     % nozzle.spline.nControlPoints = number of control points
-    % nozzle.spline.controlPointSpacing = either 'regular' where control
-    % points will be evenly spaced or a vector giving the x-location
+    % nozzle.spline.breaks = a vector giving the x-location of
+    %                                     control points
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
     nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
-    nozzle.geometry.spline.nControlPoints = 3;
-    nozzle.geometry.spline.controlPointSpacing = [0 nozzle.geometry.xThroat nozzle.geometry.length]'; %'regular';
+    nozzle.geometry.spline.breaks = ...
+            [0;
+            nozzle.geometry.xThroat;
+            nozzle.geometry.length];
     nozzle.geometry.spline.slopes = [0, 0];
 end
+
+% -------------------- SET NOZZLE WALL GEOMETRY --------------------------
+nozzle.wall.shape = 'piecewise-linear';
+% nozzle.wall.seed = an array of the form [x; y] where [x,y]
+% denote the location of the control points with the origin being at
+% the center of the inlet area
+% nozzle.wall.breaks = vector giving location of breaks in piecewise
+% function
+nozzle.wall.seed = [0, 0.01; 
+                    nozzle.geometry.xThroat, 0.01; 
+                    nozzle.geometry.length, 0.01];
+nozzle.wall.breaks = [0;
+                      nozzle.geometry.xThroat;
+                      nozzle.geometry.length];
 
 % --------------------- FLUID INPUT PROPERTIES ---------------------------
 fluid.gam = 1.4; % ratio of specific heats
@@ -85,7 +101,7 @@ freestream.T = atm.T; % K, atmospheric temperature
 
 [ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );
 
-[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, hInf, error );
+[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error );
 
 % ============================ OUTPUT DATA ===============================
 
@@ -103,7 +119,9 @@ set(groot,'defaultAxesColorOrder',[0 0 0; 1 0 0; 1 0.25 0; 0 1 0; 0 0 1])
 figure
 subplot(2,3,1); hold on
 plot(nozzle.xPosition,nozzle.geometry.D/2)
-plot(nozzle.xPosition,-nozzle.geometry.D/2)
+plot(nozzle.xPosition,nozzle.geometry.D/2+nozzle.wall.t);
+plot(nozzle.xPosition,-nozzle.geometry.D/2);
+plot(nozzle.xPosition,-nozzle.geometry.D/2-nozzle.wall.t);
 title('Geometry')
 axis equal
 

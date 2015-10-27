@@ -102,6 +102,11 @@ elseif(strcmp(outputResult,'throat')) % find location & height of throat for spl
         end
     end
     
+    % Find smallest throat in case there are several.
+    if(length(yThroat) > 1)
+        error('multiple throats detected');
+    end
+    
     varargout{1} = xThroat;
     varargout{2} = yThroat; % throat diameter
 else
