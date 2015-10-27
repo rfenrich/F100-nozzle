@@ -9,7 +9,8 @@
 % ========================== INPUT PARAMETERS ============================
 
 mission = 1; % mission number for which certain input parameters are defined below
-hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
+nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
+nozzle.wall.k = 30; % W/m*K, thermal conductivity of nozzle wall
 
 % Define input parameters that will change based on flight regime:
 if(mission == 1) % static sea-level thrust case
@@ -100,7 +101,7 @@ freestream.T = atm.T; % K, atmospheric temperature
 
 [ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );
 
-[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, hInf, error );
+[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error );
 
 % ============================ OUTPUT DATA ===============================
 

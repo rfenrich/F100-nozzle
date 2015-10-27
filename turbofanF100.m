@@ -74,6 +74,9 @@ freestream.U = freestream.M*sqrt(gam*R*freestream.T);
 % turbine.inlet.Tstag = turbine.inlet.TstagLimit;
 fuel.enthalpy = 4.28e7; % J/kg, Jet A/B, JP-4, or JP-8
 
+nozzle.wall.k = 30; % W/m*K, thermal conductivity of nozzle wall
+nozzle.hInf = 400; % W/m^2-K, heat transfer coeff. from external nozzle wall to ambient
+
 % ------------------------ CONTROLLED INPUTS -----------------------------
 
 if(control.turbine.TstagLimit)
@@ -396,7 +399,7 @@ while (abs(errorNozzleInletMach) > tolerance)
     
     %[ nozzleFlow, nozzle, xPosition ] = nozzleIdeal( struct('gam',gam,'R',R), nozzle.inlet, freestream, nozzle);
     %nozzle.PstagRatio = 0.97;
-    [ nozzle ] = nozzleNonIdeal( struct('gam',gam,'R',R), freestream, nozzle, 400, error);
+    [ nozzle ] = nozzleNonIdeal( struct('gam',gam,'R',R), freestream, nozzle, error);
     errorNozzleInletMach = (nozzle.flow.M(1) - nozzle.inlet.M)/nozzle.flow.M(1);
     %fprintf('%% Error in nozzle inlet Mach: %f\n',errorNozzleInletMach);
     

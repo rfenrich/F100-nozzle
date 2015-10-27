@@ -1,4 +1,4 @@
-function [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, hInf, error )
+function [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error )
 % Solve for flow along length of non-ideal nozzle given geometry, inlet
 % stagnation temperature and pressure, and freestream temperature and
 % pressure. Iterate for Cf and stagnation temperature. An ODE for M^2 is 
@@ -18,9 +18,7 @@ function [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, hInf, error )
 % nozzle = structure with fields: geometry.Ainlet2Athroat, 
 %          geometry.Aexit2Athroat, geometry.length, geometry.shape,
 %          geometry.xThroat,  geometry.xExit, inlet.Tstag, inlet.Pstag,
-%          inlet.D
-% hInf = generalized heat transfer coeff. from outside nozzle wall to
-%        freestream (units W/m^2-K)
+%          inlet.D, hInf
 % error = structure defining error tolerances for iterations and solvers
 %         included the following fields: error.betweenIterations.exitTemp,
 %         error.solver.apparentThroatLocation, error.dMdxDenominator,
@@ -131,8 +129,6 @@ Cp = @(T) interpLinear(air.temp,air.Cp,T); % specific heat of air
 %Pr = @(T) 0.7;
 %kf = @(T) 0.037;
 %Cp = @(T) 1035;
-
-kw = 30; % W/m*K, thermal conductivity of nozzle wall
 
 % ==================== DETERMINE IDEAL NOZZLE FLOW =======================
 options.Display='none'; % used for fsolve
@@ -315,12 +311,12 @@ while ~converged
     flow.hf = Pr(flow.T).^(2/3).*flow.density.*Cp(flow.T).*flow.U.*Cf(xPosition)/2; % heat transfer coefficient to interior nozzle wall, estimated using Chilton-Colburn analogy
     
     % Redefine stagnation temperature distribution
-    TstagXIntegrand = 4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/kw + 1/hInf));
+    TstagXIntegrand = 4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/nozzle.wall.k + 1/nozzle.hInf));
     TstagXIntegral = cumtrapz(xPosition,TstagXIntegrand);
     flow.Tstag = freestream.T*(1 - exp(-TstagXIntegral)) + inlet.Tstag*exp(-TstagXIntegral);
     Tstag = @(x) interpLinear(xPosition,flow.Tstag,x);
     %Tstag = @(x) interp1(xPosition,flow.Tstag,x,'linear');
-    dTstagdxVal = (freestream.T - flow.Tstag)*4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/kw + 1/hInf));
+    dTstagdxVal = (freestream.T - flow.Tstag)*4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/nozzle.wall.k + 1/nozzle.hInf));
     dTstagdx = @(x) interpLinear(xPosition,dTstagdxVal,x);
     %dTstagdx = @(x) interp1(xPosition,dTstagdxVal,x,'linear');
     
@@ -330,7 +326,7 @@ while ~converged
     nozzle.wallRecoveryFactor = (nozzle.Tw./flow.T - 1)./((gam-1)*flow.M.^2/2);
     
     % Estimate exterior wall temperature
-    nozzle.Text = ones(length(xPosition),1)*freestream.T - Qw./hInf; % nozzle exterior wall temp.
+    nozzle.Text = ones(length(xPosition),1)*freestream.T - Qw./nozzle.hInf; % nozzle exterior wall temp.
     
     % Redefine friction coefficient distribution (Sommer & Short's method)
     TPrimeRatio = 1 + 0.035*flow.M.^2 + 0.45*(nozzle.Tw./flow.T -1);

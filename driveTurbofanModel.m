@@ -6,8 +6,8 @@
 
 % =========================== SET INPUTS =================================
 
-altitude = 0; % in feet
-mach = 0;
+altitude = 35000; % in feet
+mach = 0.9;
 
 % =================== SET ERROR TOLERANCE RANGES =========================
 % Set error tolerances for various iterations and solvers
@@ -82,7 +82,7 @@ control.nozzle.wall.seed = [0, 0.01;
 control.nozzle.wall.breaks = [0;
                       control.nozzle.geometry.xThroat;
                       control.nozzle.geometry.length];
-
+                 
 % ----------------------- RUN SIMPLE TEST CASE ---------------------------
 tic
 [ thrust, sfc, thermalEfficiency, engine ] = turbofanF100( altitude, mach, control, error );
