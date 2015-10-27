@@ -1,0 +1,34 @@
+
+environment,
+	#graphics
+	output_precision = 16
+    tabular_data
+        tabular_data_file = 'TurbofanCompressedSensing_X_all.tab' freeform
+
+method,
+    list_parameter_study
+	  output verbose
+      import_points_file = <X-points-filename> freeform
+
+variables,
+    uniform_uncertain = 10
+        lower_bound       =  0.59     2.99       0.82     0.84          24.0             0.92          0.94        0.83             0.95              0.38
+        upper_bound       =  0.64     3.14       0.86     0.9           25.0             0.98          0.99        0.89             0.99              0.42
+        descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
+
+interface,
+    analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceTurbofanModel.m'
+        fork asynchronous evaluation_concurrency = 4
+        work_directory named '/tmp/dakota_work'
+        link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
+        directory_tag #directory_save
+        file_tag #file_save
+        parameters_file = 'params.in'
+        results_file    = 'results.out'
+
+responses,
+    response_functions = 6
+	no_gradients
+    no_hessians
+    response_descriptors = 'thrust' 'sfc' 'massFlowRate' 'thermalEfficiency' 'turbineTstag' 'fanMach'
+

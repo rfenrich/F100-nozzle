@@ -1,0 +1,43 @@
+
+environment,
+	#graphics
+	output_precision = 16
+
+method,
+	polynomial_chaos
+        expansion_order   = <p>
+        collocation_points = 0
+        basis_type
+        adapted
+            advancements = 3
+        soft_convergence_limit = 2
+        seed = 1234567
+        omp
+        variance_based_decomp #interaction_order = 1
+        output verbose
+        import_build_points_file = <S-points-filename> freeform
+        import_approx_points_file = <T-points-filename> freeform
+        export_approx_points_file = <output-filename>
+
+variables,
+    uniform_uncertain = 10
+        lower_bound       =  0.59     2.99       0.82     0.84          24.0             0.92          0.94        0.83             0.95              0.38
+        upper_bound       =  0.64     3.14       0.86     0.9           25.0             0.98          0.99        0.89             0.99              0.42
+        descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
+
+interface,
+    analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceTurbofanModel.m'
+        fork asynchronous evaluation_concurrency = 4
+        work_directory named '/tmp/dakota_work'
+        link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
+        directory_tag #directory_save
+        file_tag #file_save
+        parameters_file = 'params.in'
+        results_file    = 'results.out'
+
+responses,
+    response_functions = 1
+	no_gradients
+    no_hessians
+    response_descriptors = <response>
+

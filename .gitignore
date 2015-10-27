@@ -7,4 +7,10 @@ dakota/*.dat
 dakota/*.pdf
 dakota/docs/*
 dakota/output/*
-dakota/plots/*.pdf
+dakota/plots/*
+dakota/input/compressedSensing/*.dat
+dakota/input/compressedSensing/*.tab
+dakota/input/compressedSensing/*.out
+dakota/input/compressedSensing/*_M*_k*.in
+dakota/input/compressedSensing/TurbofanCompressedSensing_X_all.in
+dakota/input/compressedSensing/*.tex

@@ -3,8 +3,7 @@ clc; clear all; close all;
 response_functions = {'thrust', 'sfc', 'massFlowRate', 'thermalEfficiency'};
 lit_values = [64900, 0.73, 102, NaN];
 % file_list = {'TurbofanUQ-pce-L0.out','TurbofanUQ-pce-L1.out','TurbofanUQ-pce-L2.out','TurbofanUQ-pce-L3.out','TurbofanUQ-pce-L4.out','TurbofanUQ-pce-L5.out'};
-% file_list = {'TurbofanUQ-pce-L0.out','TurbofanUQ-pce-L1.out','TurbofanUQ-pce-L2.out','TurbofanUQ-pce-L3.out'};
-file_list = {'TurbofanUQ-pce-L0-tight.out','TurbofanUQ-pce-L1-tight.out','TurbofanUQ-pce-L2-tight.out','TurbofanUQ-pce-L3-tight.out','TurbofanUQ-pce-L4-tight.out','TurbofanUQ-pce-L5-tight.out'};
+file_list = {'TurbofanUQ-pce-L0.out','TurbofanUQ-pce-L1.out','TurbofanUQ-pce-L2.out','TurbofanUQ-pce-L3.out','TurbofanUQ-pce-L4.out'};
 levels = 0:1:numel(file_list)-1;
 input_vars = {'bypass','fanPstag','fanEff','compressEff','compressPratio','burnerPstag','burnerEff','turbineEffPoly','turbineEffShaft','Abypass2Acore'};
 
@@ -182,8 +181,9 @@ for ind1 = 2:numel(file_list)
         ylabel('Total Sobol'' Indices');
     end
     if(ind1 == 5)
-        print('-dpdf',  'plots/TotalSobolInd.pdf');
+%         print('-dpdf',  'plots/TotalSobolInd.pdf');
     end
+    matlab2tikz(sprintf('plots/TotalSobolIndL-%d.tex', ind1-1),'standalone',true);
 end
 %%
 error_mean = (response_mean(:,1:end-1)-repmat(response_mean(:,end), 1, size(response_mean,2)-1))./repmat(response_mean(:,end), 1, size(response_mean,2)-1);
@@ -233,6 +233,11 @@ end
 % Plot normalized PCE coefficients
 total_expansion = importdata('ref_eo16_d10.mat');
 
+for ii = 1:16
+    total_ind_levels(ii) = factorial(numel(input_vars) + ii)/(factorial(numel(input_vars))*factorial(ii));
+end
+
+tic;
 for nFile = 2:max_ind_coeff
     figure;
     for nFunc = 1:numel(response_functions)
@@ -253,12 +258,18 @@ for nFile = 2:max_ind_coeff
         
         subplot(2,2,nFunc);
         loglog(index_alpha, abs(alpha_sub),'x');
+        hold on;
+        for ii = 1:16
+            loglog([total_ind_levels(ii) total_ind_levels(ii)], [min(abs(alpha_sub)) max(abs(alpha_sub))],'k--');
+        end
         title(sprintf('Sparse Grid L-%d, %s', nFile-1, response_functions{nFunc}));
         xlabel('Basis id (total-order basis)');
         ylabel('$\vert \alpha_i\vert$','interpreter','latex');
     end
-    print('-dpdf',  sprintf('plots/SparseGridL-%d.pdf', nFile-1));
+%     print('-dpdf',  sprintf('plots/SparseGridL-%d.pdf', nFile-1));
+    matlab2tikz(sprintf('plots/SparseGridL-%d.tex', nFile-1),'standalone',true);
 end
+toc;
 
 % for nFile = 2:max_ind_coeff
 %     figure;

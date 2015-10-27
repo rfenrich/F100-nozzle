@@ -21,6 +21,7 @@ control.compressor.efficiency.polytropic = 0;
 control.compressor.overallPressureRatio = 0;
 control.burner.PstagRatio = 0;
 control.burner.efficiency = 0;
+control.turbine.TstagLimit = 0;
 control.turbine.efficiency.polytropic = 0;
 control.turbine.efficiency.shaft = 0;
 control.nozzle.inlet.Abypass2Acore = 0;
@@ -115,7 +116,7 @@ for ii = 1:num_vars
 end
 fclose(fid);
 
-control.turbine.TstagLimit = Inf;
+% control.turbine.TstagLimit = Inf;
 
 % Set error tolerances for various iterations and solvers
 error.betweenIterations.inletMach = 1e-10;
@@ -161,6 +162,7 @@ fprintf(fid,'%.16e sfc\n',sfc);
 fprintf(fid,'%.16e massFlowRate\n',engine.nozzle.massFlowRate);
 fprintf(fid,'%.16e thermalEfficiency\n',thermalEfficiency);
 fprintf(fid,'%.16e turbineTstag\n',engine.turbine.inlet.Tstag);
+fprintf(fid,'%.16e fanMach\n', engine.fan.exit.M);
 fclose(fid);
 
 % Turn singular matrix warnings back on.

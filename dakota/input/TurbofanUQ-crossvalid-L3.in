@@ -6,13 +6,13 @@ method
     sparse_grid_level = 3
     variance_based_decomp interaction_order = 2
     normalized
-    import_approx_points_file = 'Turbofan-samples.tab'
-    export_approx_points_file = 'Turbofan-crossvalid-L3.tab'
+    import_approx_points_file = './output/Turbofan-samples.tab'
+    export_approx_points_file = './output/Turbofan-crossvalid-L3.tab'
 
 variables
   uniform_uncertain = 10
-    lower_bound       =  0.57     2.95       0.82     0.84          24.0             0.92          0.94        0.83             0.95              0.27
-    upper_bound       =  0.63     3.21       0.86     0.88          25.0             0.98          0.99        0.87             0.99              0.3
+    lower_bound       =  0.59     2.99       0.82     0.84          24.0             0.92          0.94        0.83             0.95              0.38
+    upper_bound       =  0.64     3.14       0.86     0.9           25.0             0.98          0.99        0.89             0.99              0.42
     descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
 
 interface
