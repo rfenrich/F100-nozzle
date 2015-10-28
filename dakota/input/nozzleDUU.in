@@ -1,0 +1,84 @@
+environment
+    graphics
+    output_precision = 16
+    method_pointer = 'OPTIM'
+
+method
+    id_method = 'OPTIM'
+    model_pointer = 'OPTIM_M'
+        npsol_sqp
+        convergence_tolerance = 1.e-8
+
+model
+    id_model = 'OPTIM_M'
+    nested
+        variables_pointer = 'OPTIM_V'
+        sub_method_pointer = 'UQ'
+        responses_pointer = 'OPTIM_R'
+        primary_response_mapping   =   0.  0.   0. 0.   0. 0.   1. 0.
+        secondary_response_mapping =   1.  -3.  0. 0.   0. 0.   0. 0.
+                                       0.  0.   0. 0.   1. 3.   0. 0.
+                                       0.  0.   1. 3.   0. 0.   0. 0.
+
+variables
+    id_variables = 'OPTIM_V'
+    continuous_design = 5
+        initial_point    0.01   0.01   0.01   0.278     0.329
+        lower_bounds     0.001  0.001  0.001  0.05      0.3
+        upper_bounds     0.5    0.5    0.5    0.3       1.0
+        descriptors     't1'   't2'   't3'   'rThroat' 'rExit'
+
+responses
+    id_responses = 'OPTIM_R'
+    objective_functions = 1
+    nonlinear_inequality_constraints = 3
+    nonlinear_inequality_lower_bounds = 45000.    0.    0.
+    nonlinear_inequality_upper_bounds = 1000000.  1000. 15000000.
+    numerical_gradients
+        method_source dakota
+        interval_type forward
+        fd_gradient_step_size = 1.e-3
+    no_hessians
+
+method
+    id_method = 'UQ'
+    model_pointer = 'UQ_M'
+    local_reliability
+
+model
+    id_model = 'UQ_M'
+    single
+        variables_pointer = 'UQ_V'
+        interface_pointer = 'UQ_I'
+        responses_pointer = 'UQ_R'
+
+variables
+    id_variables = 'UQ_V'
+    continuous_design = 5
+    normal_uncertain = 4
+        means             =  888.366   3.055e5   500    30
+        std_deviations    =  40        15000     200    3
+        lower_bound       =  800.      2.75e5    200    25
+        upper_bound       =  950.      3.35e5    1200   35
+        descriptors       = 'TstagIn' 'PstagIn' 'hInf' 'kWall'
+
+interface
+    id_interface = 'UQ_I'
+    analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceNozzle.m'
+        fork asynchronous evaluation_concurrency = 4
+        work_directory named '/tmp/dakota_work'
+        link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
+        directory_tag #directory_save
+        file_tag #file_save
+        parameters_file = 'params.in'
+        results_file    = 'results.out'
+
+responses
+    id_responses = 'UQ_R'
+    response_functions = 4
+    numerical_gradients
+        method_source dakota
+        interval_type forward
+        fd_gradient_step_size = 1.e-3
+    no_hessians
+    response_descriptors = 'thrust' 'maxStress' 'maxTemp' 'volume'
