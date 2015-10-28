@@ -1,3 +1,7 @@
+# Usage:
+# Change directory to F100-nozzle/dakota/input
+# dakota -i TurbofanUQ-pce-L1.in -o ../output/TurbofanUQ-pce-L1.out
+
 environment
   output_precision = 16
 
@@ -14,14 +18,16 @@ variables
     descriptors       = 'bypass' 'fanPstag' 'fanEff' 'compressEff' 'compressPratio' 'burnerPstag' 'burnerEff' 'turbineEffPoly' 'turbineEffShaft' 'Abypass2Acore'
 
 interface
-  analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceTurbofanModel.m'
-    fork asynchronous evaluation_concurrency = 4
-    work_directory named '/tmp/dakota_work'
-    link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
-    directory_tag #directory_save
-    file_tag #file_save
-    parameters_file = 'params.in'
-    results_file    = 'results.out'
+    analysis_driver = 'matlab -wait -nojvm -nodisplay -nosplash < dakotaInterfaceNozzle.m'
+    #analysis_driver = '"C:/<a long path here>/matlab.exe" -wait -nodisplay -nosplash -nodesktop -r "run dakotaInterfaceNozzle.m"' # For Windows (Untested)
+        fork asynchronous evaluation_concurrency = 4
+        work_directory named '/tmp/dakota_work' # Linux and Mac only, for Windows comment this line
+        link_files '../../*' # Linux and Mac only
+        #copy_files '../../*' # For Windows (Untested)
+        directory_tag #directory_save
+        file_tag #file_save
+        parameters_file = 'params.in'
+        results_file    = 'results.out'
 
 responses
   response_functions = 4

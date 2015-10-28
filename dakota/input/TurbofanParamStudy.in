@@ -1,6 +1,6 @@
-# Dakota Input File: TurbofanParamStudy.in
 # Usage:
-#   dakota -i TurbofanParamStudy.in -o ./dakota/TurbofanParamStudy.out > ./dakota/TurbofanParamStudy.stdout
+# Change directory to F100-nozzle/dakota/input
+# dakota -i TurbofanParamStudy.in -o ../output/TurbofanParamStudy.out
 
 environment
   graphics
@@ -21,10 +21,16 @@ variables
     descriptors       'alt'    "mach"
 
 interface
-  analysis_driver = 'matlab -nojvm -nodisplay -nosplash < dakotaInterfaceTurbofanModel.m'
-    fork
-    parameters_file = 'params.in'
-    results_file    = 'results.out'
+    analysis_driver = 'matlab -wait -nojvm -nodisplay -nosplash < dakotaInterfaceNozzle.m'
+    #analysis_driver = '"C:/<a long path here>/matlab.exe" -wait -nodisplay -nosplash -nodesktop -r "run dakotaInterfaceNozzle.m"' # For Windows (Untested)
+        fork asynchronous evaluation_concurrency = 4
+        work_directory named '/tmp/dakota_work' # Linux and Mac only, for Windows comment this line
+        link_files '../../*' # Linux and Mac only
+        #copy_files '../../*' # For Windows (Untested)
+        directory_tag #directory_save
+        file_tag #file_save
+        parameters_file = 'params.in'
+        results_file    = 'results.out'
 
 responses
   response_functions = 1

@@ -4,7 +4,6 @@ dakota.rst*
 dakota/*.out
 dakota/*.stdout
 dakota/*.dat
-dakota/*.pdf
 dakota/docs/*
 dakota/output/*
 dakota/plots/*

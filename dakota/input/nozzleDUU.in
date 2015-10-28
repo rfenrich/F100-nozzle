@@ -1,3 +1,7 @@
+# Usage:
+# Change directory to F100-nozzle/dakota/input
+# dakota -i nozzleDUU.in -o ../output/nozzleDUU.out
+
 environment
     graphics
     output_precision = 16
@@ -23,10 +27,10 @@ model
 variables
     id_variables = 'OPTIM_V'
     continuous_design = 5
-        initial_point    0.01   0.01   0.01   0.278     0.329
-        lower_bounds     0.001  0.001  0.001  0.05      0.3
-        upper_bounds     0.5    0.5    0.5    0.3       1.0
-        descriptors     't1'   't2'   't3'   'rThroat' 'rExit'
+        initial_point    0.01    0.01    0.01    0.278     0.329
+        lower_bounds     0.001   0.001   0.001   0.05      0.3
+        upper_bounds     0.5     0.5     0.5     0.3       1.0
+        descriptors     't1'    't2'    't3'    'rThroat' 'rExit'
 
 responses
     id_responses = 'OPTIM_R'
@@ -64,10 +68,12 @@ variables
 
 interface
     id_interface = 'UQ_I'
-    analysis_driver = 'matlab -nojvm -nodisplay -nosplash < /home/jamonsc/equips/F100-nozzle/git/F100-nozzle/dakotaInterfaceNozzle.m'
+    analysis_driver = 'matlab -wait -nojvm -nodisplay -nosplash < dakotaInterfaceNozzle.m'
+    #analysis_driver = '"C:/<a long path here>/matlab.exe" -wait -nodisplay -nosplash -nodesktop -r "run dakotaInterfaceNozzle.m"' # For Windows (Untested)
         fork asynchronous evaluation_concurrency = 4
-        work_directory named '/tmp/dakota_work'
-        link_files '/home/jamonsc/equips/F100-nozzle/git/F100-nozzle/*'
+        work_directory named '/tmp/dakota_work' # Linux and Mac only, for Windows comment this line
+        link_files '../../*' # Linux and Mac only
+        #copy_files '../../*' # For Windows (Untested)
         directory_tag #directory_save
         file_tag #file_save
         parameters_file = 'params.in'
