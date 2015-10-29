@@ -4,7 +4,7 @@ clear all; close all;
 
 %%
 m = 10;
-M = 5;
+M = 100;
 X = 2*rand(M,m)-1;
 
 thrusts = zeros(M,1);
@@ -21,14 +21,27 @@ for i=1:M
 end
 
 
+
+
+
 %%
 % thrust
 A = [ones(M,1) X];
 u = A\thrusts;
 w = u(2:end)/norm(u(2:end));
 
+xmax = sign(w); 
+[thrustmax, ~, ~] = wrapperTurbofan(xmax');
+
+xmin = -xmax;
+[thrustmin, ~, ~] = wrapperTurbofan(xmin');
+
+
 figure(1);
-plot(X*w,thrusts,'ko','LineWidth',2,'MarkerSize',12,'MarkerFaceColor','r');
+plot(X*w,thrusts,'ko',...
+    xmax'*w,thrustmax.total,'bs',...
+    xmin'*w,thrustmin.total,'bs',...
+    'LineWidth',2,'MarkerSize',12,'MarkerFaceColor','r');
 axis square; grid on;
 set(gca,'FontSize',14);
 xlabel('Active variable');
@@ -50,8 +63,17 @@ A = [ones(M,1) X];
 u = A\sfcs;
 w_sfc = u(2:end)/norm(u(2:end));
 
+xmax = sign(w_sfc); 
+[~, sfcmax, ~] = wrapperTurbofan(xmax');
+
+xmin = -xmax;
+[~, sfcmin, ~] = wrapperTurbofan(xmin');
+
 figure(3);
-plot(X*w_sfc,sfcs,'ko','LineWidth',2,'MarkerSize',12,'MarkerFaceColor','r');
+plot(X*w_sfc,sfcs,'ko',...
+    xmax'*w_sfc,sfcmax,'bs',...
+    xmin'*w_sfc,sfcmin,'bs',...
+    'LineWidth',2,'MarkerSize',12,'MarkerFaceColor','r');
 axis square; grid on;
 set(gca,'FontSize',14);
 xlabel('Active variable');
@@ -73,8 +95,17 @@ A = [ones(M,1) X];
 u = A\efficiencys;
 w_eff = u(2:end)/norm(u(2:end));
 
+xmax = sign(w_eff); 
+[~, ~, effmax] = wrapperTurbofan(xmax');
+
+xmin = -xmax;
+[~, ~, effmin] = wrapperTurbofan(xmin');
+
 figure(5);
-plot(X*w_eff,efficiencys,'ko','LineWidth',2,'MarkerSize',12,'MarkerFaceColor','r');
+plot(X*w_eff,efficiencys,'ko',...
+    xmax'*w_eff,effmax,'bs',...
+    xmin'*w_eff,effmin,'bs',...
+    'LineWidth',2,'MarkerSize',12,'MarkerFaceColor','r');
 axis square; grid on;
 set(gca,'FontSize',14);
 xlabel('Active variable');
