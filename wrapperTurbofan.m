@@ -12,13 +12,30 @@ function [thrust, sfc, thermalEfficiency] = wrapperTurbofan(x)
 % 0.95 <= control.turbine.efficiency.shaft <= 0.99
 % 0.15 <= control.nozzle.inlet.Abypass2Acore <= 0.4 (nominal 0.296)
 
-lb = [0.57 2.91 0.82 24 0.84 0.92 0.94 0.83 0.95 0.15];
-ub = [0.63 3.21 0.86 25 0.9 0.98 0.99 0.89 0.99 0.4];
+lb = [0.59 2.99 0.82 24 0.84 0.92 0.94 0.83 0.95 0.38];
+ub = [0.64 3.14 0.86 25 0.9 0.98 0.99 0.89 0.99 0.42];
 x0 = 0.5*(x+1).*(ub-lb) + lb;
 
 % Set parameters of turbofan script
 altitude = 35000; % in feet
 mach = 0.9;
+
+% =================== SET ERROR TOLERANCE RANGES =========================
+% Set error tolerances for various iterations and solvers
+error.betweenIterations.inletMach = 1e-10;
+error.solver.inletMach = 1e-8;
+error.betweenIterations.exitTemp = 1e-6;
+error.solver.apparentThroatLocation = 1e-6;
+error.solver.M2relative = 1e-10;
+error.solver.M2absolute = 1e-10;
+error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
+
+% ======================= INITIALIZE CONTROLS ============================
+% If a control is set to zero then turbofanF100.m will
+% assume a typical value for that parameter; otherwise, it will use the
+% parameter value that the user provides.
+
+% -------------------------- ENGINE CONTROLS -----------------------------
 
 control.bypassRatio = x0(1);
 control.f = 0;
@@ -28,11 +45,12 @@ control.compressor.efficiency.polytropic = x0(5);
 control.compressor.overallPressureRatio = x0(4);
 control.burner.PstagRatio = x0(6);
 control.burner.efficiency = x0(7);
+control.turbine.TstagLimit = 0;
 control.turbine.efficiency.polytropic = x0(8);
 control.turbine.efficiency.shaft = x0(9);
-control.nozzle.inlet.Abypass2Acore = x0(10);
-control.nozzle.inlet.D = 0; % m
-control.nozzle.throat.A = 0; % m^2
+
+
+% ---------------------- NOZZLE GEOMETRY CONTROLS ------------------------
 
 control.nozzle.geometry.shape = 'spline';
 control.nozzle.geometry.length = 1;
@@ -50,25 +68,34 @@ if(strcmp(control.nozzle.geometry.shape,'spline'))
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
     control.nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
-    control.nozzle.geometry.spline.nControlPoints = 3;
-    control.nozzle.geometry.spline.controlPointSpacing = [0 control.nozzle.geometry.xThroat control.nozzle.geometry.length]'; % 'regular';
+    control.nozzle.geometry.spline.breaks = ...
+            [0;
+            control.nozzle.geometry.xThroat;
+            control.nozzle.geometry.length];
     control.nozzle.geometry.spline.slopes = [0, 0];
 end
 
+control.nozzle.inlet.Abypass2Acore = x0(10);
 control.nozzle.inlet.D = 0; % m
 control.nozzle.throat.A = 0; % m^2
 
 control.nozzle.geometry.Ainlet2Athroat = 1.368;
 control.nozzle.geometry.Aexit2Athroat = 1.4;
 
-% Set error tolerances for various iterations and solvers
-error.betweenIterations.inletMach = 1e-10;
-error.solver.inletMach = 1e-8;
-error.betweenIterations.exitTemp = 1e-6;
-error.solver.apparentThroatLocation = 1e-6;
-error.solver.M2relative = 1e-10;
-error.solver.M2absolute = 1e-10;
-error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
+% -------------------- SET NOZZLE WALL GEOMETRY --------------------------
+control.nozzle.wall.shape = 'piecewise-linear';
+% nozzle.wall.seed = an array of the form [x; y] where [x,y]
+% denote the location of the control points with the origin being at
+% the center of the inlet area
+% nozzle.wall.breaks = vector giving location of breaks in piecewise
+% function
+control.nozzle.wall.seed = [0, 0.01; 
+                    control.nozzle.geometry.xThroat, 0.01; 
+                    control.nozzle.geometry.length, 0.01];
+control.nozzle.wall.breaks = [0;
+                      control.nozzle.geometry.xThroat;
+                      control.nozzle.geometry.length];
+
 
 [thrust, sfc, thermalEfficiency, ~] = turbofanF100( altitude, mach, control, error );
 
