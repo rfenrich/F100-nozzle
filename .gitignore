@@ -13,3 +13,5 @@ dakota/input/compressedSensing/*.out
 dakota/input/compressedSensing/*_M*_k*.in
 dakota/input/compressedSensing/TurbofanCompressedSensing_X_all.in
 dakota/input/compressedSensing/*.tex
+# Ignore files in local folder:
+local/
