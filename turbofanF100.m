@@ -171,13 +171,13 @@ end
 
 if(strcmp(control.nozzle.geometry.shape,'spline'))
     
-    if(control.nozzle.geometry.spline.seed)
+    if(length(control.nozzle.geometry.spline.seed) > 1)
         nozzle.geometry.spline.seed = control.nozzle.geometry.spline.seed;
     else
         nozzle.geometry.spline.seed = 'linear';
     end
     
-    if(control.nozzle.geometry.spline.breaks)
+    if(length(control.nozzle.geometry.spline.breaks) > 1)
         nozzle.geometry.spline.breaks = control.nozzle.geometry.spline.breaks;
     else
         nozzle.geometry.spline.breaks = ...
@@ -236,7 +236,7 @@ if(strcmp(control.nozzle.wall.shape,'piecewise-linear'))
     
     nozzle.wall.shape = control.nozzle.wall.shape;
     
-    if(control.nozzle.wall.seed)
+    if(length(control.nozzle.wall.seed) > 1)
         nozzle.wall.seed = control.nozzle.wall.seed;
     else
         nozzle.wall.seed = [0, 0.01; 
@@ -244,7 +244,7 @@ if(strcmp(control.nozzle.wall.shape,'piecewise-linear'))
                     nozzle.geometry.length, 0.01];
     end
     
-    if(control.nozzle.wall.breaks)
+    if(length(control.nozzle.wall.breaks) > 1)
         nozzle.wall.breaks = control.nozzle.wall.breaks;
     else
         nozzle.wall.breaks = ...

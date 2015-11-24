@@ -66,7 +66,14 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     %                                     control points
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
-    nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
+    nozzle.geometry.spline.seed = ...%'linear';
+                                [0, 0.3255; 
+                                 0.33, 0.2783; 
+                                 1, 0.3293];
+    % Recalculate area ratios/inlet geometry if necessary from the spline seed:
+    % nozzle.geometry.Ainlet2Athroat = (0.3255)^2/(0.2783)^2; % area ratio of inlet to throat
+    % nozzle.geometry.Aexit2Athroat = (0.3293)^2/(0.2783)^2; % area ratio of exit to throat
+    % nozzle.inlet.D = (0.3255)*2;
     nozzle.geometry.spline.breaks = ...
             [0;
             nozzle.geometry.xThroat;

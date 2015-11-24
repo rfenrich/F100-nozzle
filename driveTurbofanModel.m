@@ -41,20 +41,30 @@ control.turbine.efficiency.shaft = 0;
 % ---------------------- NOZZLE GEOMETRY CONTROLS ------------------------
 
 control.nozzle.geometry.shape = 'spline';
+control.nozzle.inlet.D = 0; % m
+control.nozzle.geometry.Ainlet2Athroat = 0;
+control.nozzle.geometry.Aexit2Athroat = 0;
 control.nozzle.geometry.length = 1;
 control.nozzle.geometry.xThroat = 0.33;
 
 if(strcmp(control.nozzle.geometry.shape,'spline'))
     % To parameterize using a spline, the following must be provided:
     % nozzle.spline.seed = either a shape already defined in the
-    % nozzleGeometry.m file or an array of the form [x; y] where [x,y]
+    % nozzleGeometry.m file or an array of the form [x,y] where [x_i,y_i]
     % denote the location of the control points with the origin being at
     % the center of the inlet area
     % nozzle.spline.controlPointSpacing = either 'regular' where control
     % points will be evenly spaced or a vector giving the x-location
     % nozzle.spline.slopes = 1x2 array; 1st argument is slope of inlet,
     % 2nd argument is slope of outlet
-    control.nozzle.geometry.spline.seed = 'linear'; %[0, 0.3255; 0.33, 0.2783; 1, 0.3293]';
+    control.nozzle.geometry.spline.seed = ...%'linear';
+                                        [0, 0.3255; 
+                                         0.33, 0.2783;
+                                         1, 0.3293];
+    % Recalculate area ratios/inlet geometry if necessary from the spline seed:
+    % control.nozzle.geometry.Ainlet2Athroat = (0.3255+0.1)^2/0.2783^2; % area ratio of inlet to throat
+    % control.nozzle.geometry.Aexit2Athroat = 0.3293^2/0.2783^2; % area ratio of exit to throat
+    % control.nozzle.inlet.D = (0.3255+0.1)*2;
     control.nozzle.geometry.spline.breaks = ...
             [0;
             control.nozzle.geometry.xThroat;
@@ -63,11 +73,7 @@ if(strcmp(control.nozzle.geometry.shape,'spline'))
 end
 
 control.nozzle.inlet.Abypass2Acore = 0;
-control.nozzle.inlet.D = 0; % m
 control.nozzle.throat.A = 0; % m^2
-
-control.nozzle.geometry.Ainlet2Athroat = 0;
-control.nozzle.geometry.Aexit2Athroat = 0;
 
 % -------------------- SET NOZZLE WALL GEOMETRY --------------------------
 control.nozzle.wall.shape = 'piecewise-linear';
