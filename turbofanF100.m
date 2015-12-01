@@ -74,8 +74,14 @@ freestream.U = freestream.M*sqrt(gam*R*freestream.T);
 % turbine.inlet.Tstag = turbine.inlet.TstagLimit;
 fuel.enthalpy = 4.28e7; % J/kg, Jet A/B, JP-4, or JP-8
 
-nozzle.wall.k = 30; % W/m*K, thermal conductivity of nozzle wall
 nozzle.hInf = 400; % W/m^2-K, heat transfer coeff. from external nozzle wall to ambient
+
+% Material properties below are for SEPCARBINOX A500, a ceramic matrix
+% composite
+nozzle.wall.k = 8.6; % W/m*K, thermal conductivity of nozzle wall
+nozzle.wall.coeffThermalExpansion = 2.3e-6; % 1/K, coefficient of thermal expansion of nozzle wall
+nozzle.wall.E = 80e9; % Pa, elastic modulus of nozzle wall
+nozzle.wall.poissonRatio = 0.3; % Poisson ratio of nozzle wall
 
 % ------------------------ CONTROLLED INPUTS -----------------------------
 

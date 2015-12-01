@@ -370,6 +370,10 @@ nozzle.exit.Tstag = flow.Tstag(end);
 % ========================== CALC STRESSES ===============================
 
 nozzle.hoopStress = flow.P.*D(xPosition)./(2*t(xPosition));
+nozzle.thermalHoopStress = 0.5*(nozzle.Tw-nozzle.Text)*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
+%nozzle.thermalLongitudinalStress = 0.5*tempDiff*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
+
+nozzle.maxStress = nozzle.hoopStress + nozzle.thermalHoopStress;
 
 % ========================== CALC GEOMETRY ===============================
 

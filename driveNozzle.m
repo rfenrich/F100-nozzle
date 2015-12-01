@@ -10,7 +10,12 @@
 
 mission = 1; % mission number for which certain input parameters are defined below
 nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
-nozzle.wall.k = 30; % W/m*K, thermal conductivity of nozzle wall
+% Material properties below are for SEPCARBINOX A500, a ceramic matrix
+% composite
+nozzle.wall.k = 8.6; % W/m*K, thermal conductivity of nozzle wall
+nozzle.wall.coeffThermalExpansion = 2.3e-6; % 1/K, coefficient of thermal expansion of nozzle wall
+nozzle.wall.E = 80e9; % Pa, elastic modulus of nozzle wall
+nozzle.wall.poissonRatio = 0.3; % Poisson ratio of nozzle wall
 
 % Define input parameters that will change based on flight regime:
 if(mission == 1) % static sea-level thrust case
@@ -235,6 +240,12 @@ legend('ideal');
 % plot(nozzle.xPosition,nozzle.flow.Cf)
 % xlabel('Axial position (m)')
 % title('Friction coefficient C_f')
+%
+% % -------------------------- PLOT MAX STRESS -----------------------------
+% figure
+% plot(nozzle.xPosition,nozzle.maxStress/1e6)
+% xlabel('Axial position (m)')
+% title('Principal Stress (MPa)')
 % 
 % % --------------------- PLOT TEMPERATURE PROFILES ------------------------
 % figure
