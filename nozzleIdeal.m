@@ -94,6 +94,40 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     A = @(x) splineGeometry(x,'A',pp);
     dAdx = @(x) splineGeometry(x,'dAdx',pp);
     D = @(x) splineGeometry(x,'D',pp);
+    
+elseif(strcmp(nozzle.geometry.shape,'B-spline'))
+    
+    % Adjust nozzle throat size/location information if it has changed
+    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(xThroat ~= nozzle.geometry.xThroat)
+        fprintf('throat size/location changed with spline parameterization\n');
+    end
+    nozzle.geometry.xThroat = xThroat;
+    nozzle.throat.A = pi*yThroat^2;
+    nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
+    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
+
+    % Make necessary functions for splined nozzle shape
+    A = @(x) BsplineGeometry(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    dAdx = @(x) BsplineGeometry(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    D = @(x) BsplineGeometry(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+
+elseif(strcmp(nozzle.geometry.shape,'B-spline-mex'))
+    
+    % Adjust nozzle throat size/location information if it has changed
+    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(xThroat ~= nozzle.geometry.xThroat)
+        fprintf('throat size/location changed with spline parameterization\n');
+    end
+    nozzle.geometry.xThroat = xThroat;
+    nozzle.throat.A = pi*yThroat^2;
+    nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
+    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
+
+    % Make necessary functions for splined nozzle shape
+    A = @(x) BsplineGeometryMex(x,1,nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs');
+    dAdx = @(x) BsplineGeometryMex(x,2,nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs');
+    D = @(x) BsplineGeometryMex(x,3,nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs');
 
 else % if nozzle shape is not a spline
     A = @(x) nozzleGeometry(x,'A',nozzle.inlet.D,nozzle.geometry.length,nozzle.geometry.xThroat,nozzle.geometry.Ainlet2Athroat,nozzle.geometry.Aexit2Athroat,nozzle.geometry.shape);
@@ -218,11 +252,26 @@ flow.density = flow.P./(R*flow.T); % density
 flow.U = flow.M.*sqrt(gam*R*flow.T); % velocity
 flow.Re = flow.density.*flow.U.*D(xPosition)./dynamicViscosity(flow.T);
 
-% Assign flow data to nozzle 
-nozzle.flow = flow;
+% =================== ASSIGN FLOW DATA TO NOZZLE =========================
 
+nozzle.flow = flow;
+nozzle.PstagRatio = flow.Pstag(end)/flow.Pstag(1);
 nozzle.TstagRatio = 1;
+
+% Record nozzle exit values
+nozzle.exit.M = nozzle.flow.M(end);
+nozzle.exit.Pstag = flow.Pstag(end);
 nozzle.exit.Tstag = inlet.Tstag;
+nozzle.exit.P = nozzle.flow.P(end);
+nozzle.exit.T = nozzle.flow.T(end);
+nozzle.exit.U = nozzle.flow.U(end);
+
+% ==================== CALCULATE APPROX. THRUST ==========================
+% Thrust is only approximate since engine is not taken into account.
+
+massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
+nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
+nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 
 % ========================== CALC STRESSES ===============================
 
@@ -240,6 +289,10 @@ nozzle.wall.t = t(xPosition);
 
 % Volume calculation only works for spline parameterized nozzle geometry
 % and piecewise-linear parameterized nozzle wall thickness
-nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
+if(exist('pp','var'))
+    nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
+else
+    nozzle.geometry.volume = 0;
+end
 
 end
