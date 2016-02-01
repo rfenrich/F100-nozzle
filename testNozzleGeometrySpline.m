@@ -3,6 +3,8 @@
 %
 % Rick Fenrich 9/1/15
 
+clear all; close all; clc;
+
 % Nozzle properties
 nozzleLength = 1.2;
 xThroat = 0.25;
@@ -42,4 +44,3 @@ plot(xPosition, A(xPosition),'b-');
 plot(xPosition, AfromD,'r:');
 plot(xPosition, AfromdAdx,'g-.');
 legend('A','A from D','A from dAdx');
-    
