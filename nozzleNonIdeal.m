@@ -437,10 +437,12 @@ nozzle.wall.t = t(xPosition);
 
 % Volume calculation only works for spline parameterized nozzle geometry
 % and piecewise-linear parameterized nozzle wall thickness
-if(exist('pp','var'))
+if(exist('pp','var')) % Exact volume for cubic spline parameterization
     nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
-else
-    nozzle.geometry.volume = 0;
+else % Approximate volume using trapezoidal integration
+    xVolume = linspace(0,nozzle.geometry.length,500)';
+    volumeIntegrand = pi*D(xVolume).*t(xVolume) + pi*t(xVolume).^2;
+    nozzle.geometry.volume = (xVolume(2)-xVolume(1))*trapz(volumeIntegrand);
 end
 
 % ========================== PLOT GEOMETRY ===============================
