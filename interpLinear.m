@@ -10,14 +10,25 @@ for ii = 1:length(x)
 
     ind1 = find(xVec <= x(ii), 1, 'last');
     ind2 = find(xVec >= x(ii), 2, 'first');
-    x1 = xVec(ind1(1));
-    x2 = xVec(ind2(1));
-    y1 = yVec(ind1(1));
+    if(numel(ind1) == 0) % out of bounds
+        x1 = x(ii);
+        y1 = yVec(1);
+    else % in bounds
+        x1 = xVec(ind1(1));
+        y1 = yVec(ind1(1));
+    end
+    
+    if(numel(ind2) == 0) % out of bounds
+        x2 = x(ii);
+        y2 = yVec(end);
+    else
+        x2 = xVec(ind2(1));
+        y2 = yVec(ind2(1));
+    end    
     
     if(x1 == x2)
         y(ii) = y1;
     else
-        y2 = yVec(ind2(1));
         y(ii) = (x(ii)-x1)*(y2-y1)/(x2-x1) + y1;
     end
     
