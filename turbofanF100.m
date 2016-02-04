@@ -200,6 +200,30 @@ if(strcmp(control.nozzle.geometry.shape,'spline'))
     
 end
 
+if(strcmp(control.nozzle.geometry.shape,'B-spline') || strcmp(control.nozzle.geometry.shape,'B-spline-mex'))
+    
+    nozzle.geometry.bSpline.knots = control.nozzle.geometry.bSpline.knots;
+    nozzle.geometry.bSpline.coefs = control.nozzle.geometry.bSpline.coefs;
+
+    % Determine nozzle throat
+    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    control.nozzle.geometry.xThroat = xThroat;
+
+    % Define other geometry parameters
+    control.nozzle.geometry.length = nozzle.geometry.bSpline.coefs(1,end);
+    nozzle.geometry.length = control.nozzle.geometry.length;
+    
+    control.nozzle.inlet.D = nozzle.geometry.bSpline.coefs(2,1)*2;
+    nozzle.inlet.D = control.nozzle.inlet.D;
+    
+    control.nozzle.inlet.A = pi*nozzle.geometry.bSpline.coefs(2,1)^2;
+    nozzle.inlet.A = control.nozzle.inlet.A;
+    
+    control.nozzle.geometry.Ainlet2Athroat = (nozzle.inlet.D/2)^2/yThroat^2;
+    control.nozzle.geometry.Aexit2Athroat = (nozzle.geometry.bSpline.coefs(2,end))^2/yThroat^2;
+    
+end
+
 if(control.nozzle.inlet.Abypass2Acore)
     nozzle.inlet.Abypass2Acore = control.nozzle.inlet.Abypass2Acore;
 else

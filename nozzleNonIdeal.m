@@ -299,6 +299,7 @@ while ~converged
         options2 = optimset('TolFun',error.solver.apparentThroatLocation);
         dMdxCoeffFunc(nozzle.geometry.xThroat);
         nozzle.geometry.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.geometry.xThroat,options2);
+        %nozzle.geometry.xApparentThroat = 0.53; % JUST TO TEST
         
         % Split problem into before and after nozzle throat, solve for d(M^2)/dx
         dM2dxPost = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+nozzle.geometry.xApparentThroat)./A(x+nozzle.geometry.xApparentThroat) + 2*gam*M2*Cf(x+nozzle.geometry.xApparentThroat)./D(x+nozzle.geometry.xApparentThroat) + (1+gam*M2)*dTstagdx(x+nozzle.geometry.xApparentThroat)./(2*Tstag(x+nozzle.geometry.xApparentThroat)));

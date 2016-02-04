@@ -47,6 +47,9 @@ end
 
 for ii = 1:length(x)
     ftemp = find(x(ii) <= xControl);
+    if(numel(ftemp) == 0) % out of bounds
+        ftemp = xControl(1);
+    end
     segment = ftemp(1) - 1; % segment numer of piece
     if segment < 1
         segment = 1;

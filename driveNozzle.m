@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 1; % mission number for which certain input parameters are defined below
+mission = 3; % mission number for which certain input parameters are defined below
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------
 nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
@@ -161,6 +161,7 @@ fprintf('Inlet Stagnation Pressure: %0.4f Pa\n',nozzle.inlet.Pstag);
 fprintf('Inlet Stagnation Temperature: %0.4f K\n',nozzle.inlet.Tstag);
 fprintf('Outlet Static Pressure: %0.4f Pa\n',nozzle.flow.P(end));
 
+fprintf('Nozzle Volume: %0.4f cm^3\n',nozzle.geometry.volume*100^3);
 fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.approxThrust);
 
 % ============================== PLOTTING ================================
