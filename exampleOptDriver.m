@@ -19,13 +19,8 @@ clear all; close all; clc;
 % Set up initial B-spline shape
 Dinlet = 0.3255*2;
 knots = [0 0 0 1 2 3 4 5 5 5]';
-coefs(1,:) = [0 2.3121 2.4845 2.5921 2.9799 3.8214 4.6055];
-coefs(1,:) = coefs(1,:) - 0.33*coefs(1,end);
-coefs(1,1) = 0;
-coefs(1,:) = coefs(1,:)/4.6055;
-coefs(2,:) = [0.3255 0.3255 0.3253 0.2285 0.1673 0.2615 0.2633];
-coefs(2,:) = coefs(2,:)*0.33;
-coefs(2,:) = coefs(2,:) + 0.3255 - coefs(2,1);  
+coefs = [0         0.1720    0.2095    0.2328    0.3170    0.4997   0.6700;
+         0.3255    0.3255    0.3254    0.2935    0.2733    0.3044   0.3050];
 
 % Set up design variables (x and y coordinates of middle 2 control points, 
 % and y coordinate of last control point)
@@ -61,7 +56,7 @@ beq = [];
 Aeq = [];
 
 % Set nonlinear inequality constraint function
-nonlconFun = @(r) exampleWrapper2(r,knots,coefs,'nonlcon');
+nonlconFun = @(r) exampleWrapper(r,knots,coefs,'nonlcon');
 
 % Set optimization options
 options.MaxIter = 50;
