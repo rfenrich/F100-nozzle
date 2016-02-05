@@ -26,6 +26,9 @@ coefs(1,3:6) = x(1:4);
 coefs(2,3:7) = x(5:9);
 nozzle.geometry.bSpline.knots = knots;
 nozzle.geometry.bSpline.coefs = coefs;
+
+% ============= PRINT DESIGN VARIABLES FOR TROUBLESHOOTING ===============
+
 fprintf('%0.4f ',coefs(1,:));
 fprintf('\n');
 fprintf('%0.4f ',coefs(2,:));

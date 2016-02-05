@@ -92,9 +92,9 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     
 elseif(strcmp(nozzle.geometry.shape,'B-spline') || strcmp(nozzle.geometry.shape,'B-spline-mex'))
     % B-spline geometry defined by knots vector and coefficients matrix
-    nozzle.geometry.bSpline.knots = [0 0 0 1 2 3 4 4 4]';
-    nozzle.geometry.bSpline.coefs = [0      0       0.05    0.324    0.78    1;
-                                     0.3255 0.3255  0.3255  0.2738  0.29  0.3293];   
+    nozzle.geometry.bSpline.knots = [0 0 0 1 2 3 4 5 5 5]';
+    nozzle.geometry.bSpline.coefs = [0         0.1720    0.2095    0.2328    0.3170    0.4997   0.6700;
+                                     0.3255    0.3255    0.3254    0.2935    0.2733    0.3044   0.3050];
     
     % Determine nozzle throat
     [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);

@@ -36,9 +36,9 @@ n = length(x); % number of design variables
 % Set up linear inequality constraints
 A = zeros(11,9); % 11 constraints total
 b = zeros(11,1); 
-delta = 1e-3; % delta for spacing 
+delta = 1e-3; % delta for spacing between control points, so code doesn't break
 
-% x position constraints
+% x and y position constraints
 A(1,1) = -1; b(1) = -coefs(1,2)*10; % 3rd control point should remain to right of 2nd
 A(2,1) = 1; A(2,2) = -1; b(2) = -delta*10; % 4th control point should remain to right of 3rd c.p.
 A(3,2) = 1; A(3,3) = -1; b(3) = -delta*10; % 5th c.p.  " "
@@ -76,6 +76,6 @@ hold on;
 tic;
 [sol,val] = fmincon(objFun,x,A,b,Aeq,beq,lb,ub,nonlconFun,options);
 timeToEnd = toc;
-fprintf('Time to completion: %0.2 sec\n',timeToEnd);
+fprintf('Time to completion: %0.2f sec\n',timeToEnd);
 
 
