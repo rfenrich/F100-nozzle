@@ -106,9 +106,16 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     D = @(x) splineGeometry(x,'D',pp);
 
 elseif(strcmp(nozzle.geometry.shape,'B-spline'))
-    
+
     % Adjust nozzle throat size/location information if it has changed
-    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    else
+        error('Only B-splines of degree 2 and 3 are supported');
+    end
+    
     if(xThroat ~= nozzle.geometry.xThroat)
         fprintf('throat size/location changed with spline parameterization\n');
     end
@@ -119,14 +126,27 @@ elseif(strcmp(nozzle.geometry.shape,'B-spline'))
     nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
 
     % Make necessary functions for splined nozzle shape
-    A = @(x) BsplineGeometry(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
-    dAdx = @(x) BsplineGeometry(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
-    D = @(x) BsplineGeometry(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    if(nozzle.geometry.bSpline.degree == 2)
+        A = @(x) BsplineGeometry(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        dAdx = @(x) BsplineGeometry(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        D = @(x) BsplineGeometry(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        A = @(x) BsplineGeometry3(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        dAdx = @(x) BsplineGeometry3(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        D = @(x) BsplineGeometry3(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    end
 
 elseif(strcmp(nozzle.geometry.shape,'B-spline-mex'))
-    
+
     % Adjust nozzle throat size/location information if it has changed
-    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);        
+    else
+        error('Only B-splines of degree 2 and 3 are supported');
+    end
+    
     if(xThroat ~= nozzle.geometry.xThroat)
         fprintf('throat size/location changed with spline parameterization\n');
     end
@@ -134,7 +154,7 @@ elseif(strcmp(nozzle.geometry.shape,'B-spline-mex'))
     nozzle.geometry.xApparentThroat = nozzle.geometry.xThroat; % initialize apparent throat location
     nozzle.throat.A = pi*yThroat^2;
     nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
-    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
+    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;    
 
     % Make necessary functions for splined nozzle shape
     A = @(x) BsplineGeometryMex(x,1,nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs');
@@ -299,7 +319,6 @@ while ~converged
         options2 = optimset('TolFun',error.solver.apparentThroatLocation);
         dMdxCoeffFunc(nozzle.geometry.xThroat);
         nozzle.geometry.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.geometry.xThroat,options2);
-        %nozzle.geometry.xApparentThroat = 0.53; % JUST TO TEST
         
         % Split problem into before and after nozzle throat, solve for d(M^2)/dx
         dM2dxPost = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+nozzle.geometry.xApparentThroat)./A(x+nozzle.geometry.xApparentThroat) + 2*gam*M2*Cf(x+nozzle.geometry.xApparentThroat)./D(x+nozzle.geometry.xApparentThroat) + (1+gam*M2)*dTstagdx(x+nozzle.geometry.xApparentThroat)./(2*Tstag(x+nozzle.geometry.xApparentThroat)));

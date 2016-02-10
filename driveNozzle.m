@@ -95,9 +95,18 @@ elseif(strcmp(nozzle.geometry.shape,'B-spline') || strcmp(nozzle.geometry.shape,
     nozzle.geometry.bSpline.knots = [0 0 0 1 2 3 4 5 5 5]';
     nozzle.geometry.bSpline.coefs = [0         0.1720    0.2095    0.2328    0.3170    0.4997   0.6700;
                                      0.3255    0.3255    0.3254    0.2935    0.2733    0.3044   0.3050];
-    
+    % 3rd degree B-spline
+    nozzle.geometry.bSpline.knots = [0 0 0 0 1 2 3 4 4 4 4]';
+    nozzle.geometry.bSpline.coefs = [0         0         0.2095    0.2328    0.3170    0.6700   0.6700;
+                                     0.3255    0.3255    0.3254    0.2935    0.2733    0.3050   0.3050];
+
     % Determine nozzle throat
-    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    nozzle.geometry.bSpline.degree = length(nozzle.geometry.bSpline.knots) - length(nozzle.geometry.bSpline.coefs) - 1;
+    if(nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);        
+    end
     nozzle.geometry.xThroat = xThroat;
 
     % Define other geometry parameters
@@ -137,7 +146,11 @@ freestream.U = freestream.M*sqrt(fluid.gam*fluid.R*freestream.T);
 
 % ----------------- PRINT SOME USEFUL DATA TO SCREEN ---------------------
 fprintf('Mission %i: %i ft altitude at %0.2f Mach\n',mission,altitude,mach);
-fprintf('Geometry: %s \n',nozzle.geometry.shape);
+if(strcmp(nozzle.geometry.shape,'B-spline') || strcmp(nozzle.geometry.shape,'B-spline-mex'))
+    fprintf('Geometry: %s (degree %i)\n',nozzle.geometry.shape,nozzle.geometry.bSpline.degree);
+else
+    fprintf('Geometry: %s \n',nozzle.geometry.shape);
+end
 fprintf('Wall Geo: %s\n',nozzle.wall.shape);
 
 [ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );

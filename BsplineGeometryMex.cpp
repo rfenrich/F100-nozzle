@@ -1,5 +1,6 @@
 #include "mex.h"
 #include <math.h>
+#include <vector>
 
 /* Given u calculate y for 2nd degree NURB spline */
 double u2y(double *coefs, double *knots, mwSize i, mwSize n, double u) {
@@ -39,6 +40,89 @@ mwSize find(double xFind, double *xVec, mwSize sz) {
     counter += 1;
   }
   return counter;
+}
+
+/* Calculate x, y, dxdu, and dydu given u for 3rd degree NURB spline */
+/* Currently implemented only for scalar inputs of u */
+void uMap3(double *knots, double *coefs, double u, double *x, double *y, double* dxdu, double *dydu, mwSize k, mwSize c) {
+
+  // Zero all outputs
+  *x = 0.;
+  *y = 0.;
+  *dxdu = 0.;
+  *dydu = 0.;
+    
+  // Calculate the highest knot index that gives a value of u below
+  // the given value (1-based index)
+  mwSize hh = find(u,knots,k);
+  if(hh == k) { // at end of knots vector
+    hh = k - 4;
+  }
+  //mexPrintf("hh: %i\n",hh);
+  //mexPrintf("u: %f\n",u);
+  
+  mwSize nn;
+  if(hh == 1) {nn = 1;}
+  else if(hh == 2) {nn = 2;}
+  else if(hh == 3) {nn = 3;}
+  else {nn = 4;}
+  
+  mwSize ii = 0;
+  mwSize jj;
+  double k1, k2, k3, k4, k5; // knot values
+  double Ncurrent, dNducurrent; // basis contributions
+  
+  // Sum up contributions from each basis
+  while(ii > -nn) { // i.e. for each contributing basis
+    
+    jj = hh + ii - 1; // subtracted 2 for C++ compatibility
+    //mexPrintf("jj = %i\n",jj);
+    
+    // Redefine k1 through k5 here
+    k1 = knots[jj];
+    k2 = knots[jj+1];
+    k3 = knots[jj+2];
+    k4 = knots[jj+3];
+    k5 = knots[jj+4];
+    
+    if(ii == 0) { // calculate basis N1
+      if( abs(k1-k2) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      else {
+        Ncurrent = (u-k1)/(k4-k1)*(u-k1)/(k3-k1)*(u-k1)/(k2-k1);
+        dNducurrent = -(3*pow(k1 - u,2))/((k1 - k2)*(k1 - k3)*(k1 - k4));
+      }
+    } else if(ii == -1) { // calculate basis N2
+      if( abs(k2-k3) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      else {
+        Ncurrent = (u-k1)/(k4-k1)*((u-k1)/(k3-k1)*(k3-u)/(k3-k2) + (k4-u)/(k4-k2)*(u-k2)/(k3-k2)) + (k5-u)/(k5-k2)*(u-k2)/(k4-k2)*(u-k2)/(k3-k2);
+        dNducurrent = (((k1 - u)*(k3 - u))/((k1 - k3)*(k2 - k3)) + ((k2 - u)*(k4 - u))/((k2 - k3)*(k2 - k4)))/(k1 - k4) + pow(k2 - u,2)/((k2 - k3)*(k2 - k4)*(k2 - k5)) + ((k5 - u)*(2*k2 - 2*u))/((k2 - k3)*(k2 - k4)*(k2 - k5)) + (2*(k1 - u)*(k1*k2 - k3*k4 - k1*u - k2*u + k3*u + k4*u))/((k1 - k3)*(k1 - k4)*(k2 - k3)*(k2 - k4));
+      }    
+    } else if(ii == -2) { // calculate basis N3
+      if( abs(k3-k4) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      else {
+        Ncurrent = (u-k1)/(k4-k1)*(k4-u)/(k4-k2)*(k4-u)/(k4-k3) + (k5-u)/(k5-k2)*((u-k2)/(k4-k2)*(k4-u)/(k4-k3) + (k5-u)/(k5-k3)*(u-k3)/(k4-k3));
+        dNducurrent = - (((k2 - u)*(k4 - u))/((k2 - k4)*(k3 - k4)) + ((k3 - u)*(k5 - u))/((k3 - k4)*(k3 - k5)))/(k2 - k5) - pow(k4 - u,2)/((k1 - k4)*(k2 - k4)*(k3 - k4)) - ((k1 - u)*(2*k4 - 2*u))/((k1 - k4)*(k2 - k4)*(k3 - k4)) - (2*(k5 - u)*(k2*k3 - k4*k5 - k2*u - k3*u + k4*u + k5*u))/((k2 - k4)*(k2 - k5)*(k3 - k4)*(k3 - k5));
+      }       
+    } else { // calculate basis N4
+      if( abs(k4-k5) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      else {
+        Ncurrent = (k5-u)/(k5-k2)*(k5-u)/(k5-k3)*(k5-u)/(k5-k4);  
+        dNducurrent = (3*pow(k5 - u,2))/((k2 - k5)*(k3 - k5)*(k4 - k5));
+      }     
+    }
+    
+    *x += coefs[jj]*Ncurrent;
+    *y += coefs[c + jj]*Ncurrent;
+    *dxdu += coefs[jj]*dNducurrent;
+    *dydu += coefs[c + jj]*dNducurrent;
+    
+    ii -= 1;
+    
+    if(ii < -4) {break;}
+    
+  }  
+  
+  return;
 }
 
 /* C++ equivalent of Matlab BsplineGeometry.m function, although it will not calculate 
@@ -143,51 +227,161 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
     D = mxGetPr(plhs[2]);
   }
 	
-	/* Check that spline degree = 2, since calculations are only valid
+	/* Check that spline degree = 2 or 3, since calculations are only valid
 	   for this degree, and for a knot vector spaced only with 0s or 1s */
-	if(p < 2 || p > 2) {
-		mexErrMsgTxt("Calculations are only for a spline of degree 2.");
+	if(p == 2) { 
+    if(knots[0] != knots[1] && knots[1] != knots[2] && knots[2] != knots[3]) {
+      mexErrMsgTxt("2nd degree B-spline implementation requires "
+                   "first 3 knots to be identical.");
+    }
+    if(knots[k] != knots[k-1] && knots[k-1] != knots[k-2] && knots[k-2] != knots[k-3]) {
+      mexErrMsgTxt("2nd degree B-spline implementation requires "
+                   "last 3 knots to be identical.");
+    }    
+	} else if (p == 3) {
+    if(knots[0] != knots[1] && knots[1] != knots[2] && knots[2] != knots[3] && knots[3] != knots[4]) {
+      mexErrMsgTxt("3rd degree B-spline implementation requires "
+                   "first 4 knots to be identical.");
+    }
+    if(knots[k] != knots[k-1] && knots[k-1] != knots[k-2] && knots[k-2] != knots[k-3] && knots[k-3] != knots[k-4]) {
+      mexErrMsgTxt("3rd degree B-spline implementation requires "
+                   "last 4 knots to be identical.");
+    }
+	} else {
+		mexErrMsgTxt("Calculations are only for a spline of degree 2 or 3.");
 	}
 	
-	// Determine x value at breaks
-  double *xKnot;
-  xKnot = (double *)mxMalloc(8*(k-4));
-  mwSize seg;
-  for(mwSize ii = 0; ii < k - 4; ii++) { // assumes 3 repeated knots at start and end
-    // determine segment number
-    if(ii < k - 5) {seg = ii + 1;} 
-    else {seg = k - 5;}
-    xKnot[ii] = u2x(coefs,knots,seg,c,knots[ii+2]);
-  }
-  xKnot[k-5] += 1e-6; // so following algorithm works
-  
-  double *y, *dydx;
+	double *xKnot;
+	double *y, *dydx;
   y = (double *)mxMalloc(8*nx);
   dydx = (double *)mxMalloc(8*nx);
-  
-  /* Calculate u given x as well as the corresponding y and dydx */
-  double uGuess, u;
-  for(mwSize ii = 0; ii < nx; ii++) {
-    
-    // Determine segment number for a given x
-    seg = find(x[ii],xKnot,k-5);
-        
-    // Solve for u using Newton method
-    uGuess = (double)seg - 0.5; // assuming knots spaced by 1
-    double ftemp1, ftemp2;
-    for(mwSize jj = 0; jj < 15; jj++) {
-      ftemp1 = g(coefs,knots,seg,c,uGuess,x[ii]);
-      ftemp2 = dgdu(coefs,knots,seg,c,uGuess);
-      u = uGuess - ftemp1/ftemp2;
-      if( abs((u-uGuess)/uGuess) <= 1e-6) {break;}
-      uGuess = u;
+	
+	if(p == 2) { // 2nd degree spline
+	
+    // Determine x value at breaks
+    xKnot = (double *)mxMalloc(8*(k-4));
+    mwSize seg;
+    for(mwSize ii = 0; ii < k - 4; ii++) { // assumes 3 repeated knots at start and end
+      // determine segment number
+      if(ii < k - 5) {seg = ii + 1;} 
+      else {seg = k - 5;}
+      xKnot[ii] = u2x(coefs,knots,seg,c,knots[ii+2]);
     }
+    xKnot[k-5] += 1e-6; // so following algorithm works
     
-    // Calculate y corresponding to given x
-    y[ii] = u2y(coefs,knots,seg,c,u);
+    /* Calculate u given x as well as the corresponding y and dydx */
+    double uGuess, u;
+    for(mwSize ii = 0; ii < nx; ii++) {
+      
+      // Determine segment number for a given x
+      seg = find(x[ii],xKnot,k-5);
+          
+      // Solve for u using Newton method
+      uGuess = (double)seg - 0.5; // assuming knots spaced by 1
+      double ftemp1, ftemp2;
+      for(mwSize jj = 0; jj < 15; jj++) {
+        ftemp1 = g(coefs,knots,seg,c,uGuess,x[ii]);
+        ftemp2 = dgdu(coefs,knots,seg,c,uGuess);
+        u = uGuess - ftemp1/ftemp2;
+        if( abs((u-uGuess)/uGuess) <= 1e-6) {break;}
+        uGuess = u;
+      }
+      
+      // Calculate y corresponding to given x
+      y[ii] = u2y(coefs,knots,seg,c,u);
+    
+      // Calculate dydx
+      dydx[ii] = dydu(coefs,knots,seg,c,u)*dudx(coefs,knots,seg,c,u);  
+    
+    }
   
-    // Calculate dydx
-    dydx[ii] = dydu(coefs,knots,seg,c,u)*dudx(coefs,knots,seg,c,u);  
+  } else { // 3rd degree spline
+  
+    double xTemp, yTemp, dxduTemp, dyduTemp;
+  
+    // Determine x value at breaks
+    xKnot = (double *)mxMalloc(8*k);
+    
+    for(mwSize ii = 0; ii < k; ii++) {
+      uMap3(knots,coefs,(double)knots[ii],&xTemp,&yTemp,&dxduTemp,&dyduTemp,k,c);
+      xKnot[ii] = xTemp;
+    }
+    xKnot[k-4] += 1e-6; // so finding upper bound on u works (assumes same 4 knots at end of knot vector) 
+    
+    /*for(mwSize ii = 0; ii < k; ii++) {
+      mexPrintf("xKnot[%i] = %f\n",ii,xKnot[ii]);
+    }*/
+    
+    double tolerance = 1e-6; // tolerance for Newton solver
+    
+    mwSize seg; // tally variable for segment number
+    double uLower, uUpper; // lower and upper bounds on u
+    double u, uNew; // values of u used in Newton iterations
+    double xEst, dxduEst; // estimated values of x and dxdu
+    mwSize counter; // used to terminate Newton iterations
+    for(mwSize ii = 0; ii < nx; ii++) {
+    
+      // Determine lower and upper bounds on u
+      seg = find(x[ii],xKnot,k);
+      uLower = knots[seg - 1];
+      uUpper = knots[seg];
+      //mexPrintf("x = %f\n",x[ii]);
+      //mexPrintf("xLower = %f\n",xKnot[seg-1]);
+      //mexPrintf("xUpper = %f\n",xKnot[seg]);
+      
+      // Pick a guess for u (a linear interpolation)
+      //u = (x[ii] - xKnot[seg-1])/(xKnot[seg] - xKnot[seg-1])*(uUpper - uLower) + uLower;
+      u = (uLower + uUpper)/2;
+      //mexPrintf("u: %f\n",u);
+      
+      // Calculate x and dxdu corresponding to u
+      uMap3(knots,coefs,u,&xTemp,&yTemp,&dxduTemp,&dyduTemp,k,c);
+      xEst = xTemp;
+      dxduEst = dxduTemp;
+      //mexPrintf("xEst: %f\n",xEst);
+      //mexPrintf("dxduEst: %f\n",dxduEst);
+      
+      // Perform 1 Newton iteration
+      if(dxduEst < tolerance) { uNew = 0.; }
+      else { uNew = u - (xEst - x[ii])/dxduEst; }
+      
+      // Perform remaining Newton iterations
+      counter = 0;
+      while( abs((uNew-u)/uNew) > tolerance ) {
+      
+        u = uNew;
+        //mexPrintf("u: %f\n",u);
+        
+        uMap3(knots,coefs,u,&xTemp,&yTemp,&dxduTemp,&dyduTemp,k,c);
+        xEst = xTemp;
+        dxduEst = dxduTemp;
+        //mexPrintf("xEst: %f\n",xEst);
+        //mexPrintf("dxduEst: %f\n",dxduEst);        
+        
+        if(dxduEst < 1e-12) { uNew = u; }
+        else { uNew = u - (xEst - x[ii])/dxduEst; }
+        
+        counter = counter + 1;
+        
+        if( counter > 10) { break; }
+       
+      }
+      
+      u = uNew;
+      //mexPrintf("u: %f\n",u);
+      uMap3(knots,coefs,u,&xTemp,&yTemp,&dxduTemp,&dyduTemp,k,c);
+      //mexPrintf("u: %f\n",u);
+      //mexPrintf("x: %f\n",xTemp);
+      //mexPrintf("y: %f\n",yTemp);
+      //mexPrintf("dxdu: %f\n",dxduTemp);
+      //mexPrintf("dydu: %f\n",dyduTemp);
+      
+      y[ii] = yTemp;
+      
+      if( dxduTemp < tolerance ) { dydx[ii] = 0; }
+      else { dydx[ii] = dyduTemp/dxduTemp; }      
+    
+    }
   
   }
   

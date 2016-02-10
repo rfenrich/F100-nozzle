@@ -56,8 +56,8 @@ c = length(coefs); % number of control points
 k = length(knots); % knots
 p = k-c-1; % spline degree
 
-if(p ~= 2)
-    error('Calculations are only for a spline of degree 2');
+if(p < 2 || p > 4)
+    error('Calculations are only for a spline of degree 2 or 3');
 end
 
 % Determine x value at breaks

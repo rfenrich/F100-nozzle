@@ -98,7 +98,14 @@ if(strcmp(nozzle.geometry.shape,'spline'))
 elseif(strcmp(nozzle.geometry.shape,'B-spline'))
     
     % Adjust nozzle throat size/location information if it has changed
-    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    else
+        error('Only B-splines of degree 2 and 3 are supported');
+    end
+    
     if(xThroat ~= nozzle.geometry.xThroat)
         fprintf('throat size/location changed with spline parameterization\n');
     end
@@ -108,14 +115,27 @@ elseif(strcmp(nozzle.geometry.shape,'B-spline'))
     nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
 
     % Make necessary functions for splined nozzle shape
-    A = @(x) BsplineGeometry(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
-    dAdx = @(x) BsplineGeometry(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
-    D = @(x) BsplineGeometry(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
-
+    if(nozzle.geometry.bSpline.degree == 2)
+        A = @(x) BsplineGeometry(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        dAdx = @(x) BsplineGeometry(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        D = @(x) BsplineGeometry(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        A = @(x) BsplineGeometry3(x,'A',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        dAdx = @(x) BsplineGeometry3(x,'dAdx',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+        D = @(x) BsplineGeometry3(x,'D',nozzle.geometry.bSpline.knots,nozzle.geometry.bSpline.coefs);
+    end
+    
 elseif(strcmp(nozzle.geometry.shape,'B-spline-mex'))
     
     % Adjust nozzle throat size/location information if it has changed
-    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    elseif(nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);        
+    else
+        error('Only B-splines of degree 2 and 3 are supported');
+    end
+    
     if(xThroat ~= nozzle.geometry.xThroat)
         fprintf('throat size/location changed with spline parameterization\n');
     end

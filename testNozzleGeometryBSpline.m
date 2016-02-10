@@ -1,7 +1,7 @@
-% Test BsplineGeometry function by comparing areas calculated from the A(x)
+% Test BsplineGeometry3 function by comparing areas calculated from the A(x)
 % area function, D(x) diameter function, and dAdx(x) area change function.
 %
-% Rick Fenrich 1/19/16
+% Rick Fenrich 2/8/16
 
 %clear all; close all; clc;
 
