@@ -92,13 +92,15 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     
 elseif(strcmp(nozzle.geometry.shape,'B-spline') || strcmp(nozzle.geometry.shape,'B-spline-mex'))
     % B-spline geometry defined by knots vector and coefficients matrix
-    nozzle.geometry.bSpline.knots = [0 0 0 1 2 3 4 5 5 5]';
-    nozzle.geometry.bSpline.coefs = [0         0.1720    0.2095    0.2328    0.3170    0.4997   0.6700;
-                                     0.3255    0.3255    0.3254    0.2935    0.2733    0.3044   0.3050];
+    % 2nd degree B-spline
+    %nozzle.geometry.bSpline.knots = [0 0 0 1 2 3 4 5 5 5]';
+    %nozzle.geometry.bSpline.coefs = [0         0.1720    0.2095    0.2328    0.3170    0.4997   0.6700;
+    %                                 0.3255    0.3255    0.3254    0.2935    0.2733    0.3044   0.3050];
+    
     % 3rd degree B-spline
-    nozzle.geometry.bSpline.knots = [0 0 0 0 1 2 3 4 4 4 4]';
-    nozzle.geometry.bSpline.coefs = [0         0         0.2095    0.2328    0.3170    0.6700   0.6700;
-                                     0.3255    0.3255    0.3254    0.2935    0.2733    0.3050   0.3050];
+    nozzle.geometry.bSpline.knots = [0 0 0 0 1 2 3 4 5 6 7 8 9 9 9 9]';
+    nozzle.geometry.bSpline.coefs = [0.0000 0.0000 0.1470 0.1578 0.1707 0.2180 0.2233 0.3186 0.4178 0.6008 0.6700 0.6700;
+                                     0.3255 0.3255 0.3255 0.3255 0.3255 0.3250 0.2945 0.2719 0.2944 0.3056 0.3050 0.3050];
 
     % Determine nozzle throat
     nozzle.geometry.bSpline.degree = length(nozzle.geometry.bSpline.knots) - length(nozzle.geometry.bSpline.coefs) - 1;
