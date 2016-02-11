@@ -221,8 +221,8 @@ if (strcmp(nozzle.status,'subsonic')) % subsonic flow throughout nozzle
     M2 = flipud(M2);
 elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
     
-    UpperM = 1.000001; % start integration at this Mach number for aft portion of nozzle
-    LowerM = 0.999999; % start integration at this Mach number for fore portion of nozzle
+    UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
+    LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
     
     % Solve using 4th-order Runge-Kutta method
     [xPositionPost,M2Post] = ode45(dM2dxPost,[0 nozzle.geometry.length-nozzle.geometry.xThroat],UpperM,options);
@@ -234,8 +234,8 @@ elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
 else % sub and supersonic flow, shock in nozzle
     dM2dxPostShock = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+shock.x)./A(x+shock.x));
     
-    UpperM = 1.000001; % start integration at this Mach number for aft portion of nozzle
-    LowerM = 0.999999; % start integration at this Mach number for fore portion of nozzle
+    UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
+    LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
     
     [xPositionPost,M2Post] = ode45(dM2dxPost,[0 shock.x - nozzle.geometry.xThroat],UpperM,options);
     MbehindShock = sqrt((1 + (gam-1)*shock.M^2/2)/(gam*shock.M^2 - (gam-1)/2));
