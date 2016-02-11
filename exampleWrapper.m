@@ -22,8 +22,8 @@ function [varargout] = exampleWrapper(x,knots,coefs,output)
 % ====================== ASSIGN DESIGN VARIABLES =========================
 
 % Redefine B-spline geometry using design variables
-coefs(1,3:6) = x(1:4);
-coefs(2,3:7) = x(5:9);
+coefs(1,6:12) = x(1:7);
+coefs(2,6:12) = x(8:14);
 nozzle.geometry.bSpline.knots = knots;
 nozzle.geometry.bSpline.coefs = coefs;
 
@@ -74,7 +74,12 @@ nozzle.geometry.shape = 'B-spline-mex';
 % knots and coefs defined at beginning of file
 
 % Determine nozzle throat
-[xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+nozzle.geometry.bSpline.degree = length(nozzle.geometry.bSpline.knots) - length(nozzle.geometry.bSpline.coefs) - 1;
+if(nozzle.geometry.bSpline.degree == 2)
+    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+elseif(nozzle.geometry.bSpline.degree == 3)
+    [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);        
+end
 nozzle.geometry.xThroat = xThroat;
 
 % Define other geometry parameters
