@@ -198,7 +198,7 @@ function [xVector, yVector, dxduVector, dyduVector] = uMap(knots,coefs,uVector)
  
         % calculate the highest knot index that gives a value of u below the given value (1-based)
         i = find(knots<=u,1,'last');
-
+        
         % nn = min(i,4);
         if(i == 1), nn = 1;
         elseif(i == 2), nn = 2;
