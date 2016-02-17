@@ -4,7 +4,7 @@
 % them, and produces plots comparing ideal and non-ideal nozzle behavior,
 % as well as non-ideal nozzle heating and friction characteristics.
 %
-% Rick Fenrich 7/29/15 modified 2/1/16
+% Rick Fenrich 7/29/15 modified 2/17/16
 
 % ========================== INPUT PARAMETERS ============================
 
@@ -171,7 +171,7 @@ fprintf('Inlet Stagnation Temperature: %0.4f K\n',nozzle.inlet.Tstag);
 fprintf('Outlet Static Pressure: %0.4f Pa\n',nozzle.flow.P(end));
 
 fprintf('Nozzle Volume: %0.4f cm^3\n',nozzle.geometry.volume*100^3);
-fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.approxThrust);
+fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.netThrust);
 
 % ============================== PLOTTING ================================
 % Comment or uncomment the plotting below to make plots

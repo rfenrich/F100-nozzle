@@ -72,14 +72,26 @@ if(strcmp(control.nozzle.geometry.shape,'spline'))
     control.nozzle.geometry.spline.slopes = [0, 0];
 elseif(strcmp(control.nozzle.geometry.shape,'B-spline') || strcmp(control.nozzle.geometry.shape,'B-spline-mex'))
     % B-spline geometry defined by knots vector and coefficients matrix
-    Dinlet = 0.3255*2;
-    knots = [0 0 0 1 2 3 4 5 6 7 8 9 10 10 10]';
-    coefs = [0 0 0.05 0.1   0.2   0.27   0.35  0.45  0.6   0.75   0.9   1;
-             0 0 0    -0.02 -0.04 -0.06  -0.05 -0.04 -0.03 -0.02  -0.01 0.0038];     
-    coefs(2,:) = coefs(2,:)+Dinlet/2;
-    x = [0.1200 0.2400 0.2400 0.2800 0.5400 0.7200 0.9000 1.0000 0.3255 0.3255 0.3186 0.3306 0.3196 0.3196 0.3196 0.3196 0.3255];
-    coefs(1,4:11) = x(1:8);
-    coefs(2,4:12) = x(9:17);
+	knots = [0 0 0 0 1:12 13 13 13 13]';
+% 	coefs = [0.0000 0.0000 0.1500 0.1700 0.1900 0.2124 0.2269 0.2734 0.3218 0.3343 0.3474 0.4392 0.4828 0.5673 0.6700 0.6700;
+%              0.3255 0.3255 0.3255 0.3255 0.3255 0.3238 0.2981 0.2817 0.2787 0.2790 0.2804 0.2936 0.2978 0.3049 0.3048 0.3048];
+	coefs = [0.0000 0.0000 0.1500 0.1700 0.1900 0.2124 0.2269 0.2734 0.3218 0.3343 0.3474 0.4392 0.4828 0.5673 0.6700 0.6700;
+             0.3255 0.3255 0.3255 0.3255 0.3255 0.3238 0.2981 0.2817 0.2789 0.2790 0.2804 0.2936 0.2978 0.3049 0.3048 0.3048];
+    % Determine nozzle throat
+    control.nozzle.geometry.bSpline.degree = length(knots) - length(coefs) - 1;
+    if(control.nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', knots, coefs);
+    elseif(control.nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', knots, coefs);        
+    end
+    control.nozzle.geometry.xThroat = xThroat;
+
+    % Define other geometry parameters
+    control.nozzle.geometry.length = coefs(1,end);
+    control.nozzle.inlet.D = coefs(2,1)*2;
+    control.nozzle.geometry.Ainlet2Athroat = (control.nozzle.inlet.D/2)^2/yThroat^2;
+    control.nozzle.geometry.Aexit2Athroat = (coefs(2,end))^2/yThroat^2;
+ 
     control.nozzle.geometry.bSpline.knots = knots;
     control.nozzle.geometry.bSpline.coefs = coefs;
 end

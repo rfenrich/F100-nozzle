@@ -204,9 +204,14 @@ if(strcmp(control.nozzle.geometry.shape,'B-spline') || strcmp(control.nozzle.geo
     
     nozzle.geometry.bSpline.knots = control.nozzle.geometry.bSpline.knots;
     nozzle.geometry.bSpline.coefs = control.nozzle.geometry.bSpline.coefs;
+    nozzle.geometry.bSpline.degree = control.nozzle.geometry.bSpline.degree;
 
     % Determine nozzle throat
-    [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    if(control.nozzle.geometry.bSpline.degree == 2)
+        [xThroat, yThroat] = BsplineGeometry(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    elseif(control.nozzle.geometry.bSpline.degree == 3)
+        [xThroat, yThroat] = BsplineGeometry3(0, 'throat', nozzle.geometry.bSpline.knots, nozzle.geometry.bSpline.coefs);
+    end
     control.nozzle.geometry.xThroat = xThroat;
 
     % Define other geometry parameters

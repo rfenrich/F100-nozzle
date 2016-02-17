@@ -433,9 +433,14 @@ nozzle.exit.U = nozzle.flow.U(end);
 % ==================== CALCULATE APPROX. THRUST ==========================
 % Thrust is only approximate since engine is not taken into account.
 
+% Estimate losses due to divergence (formula below is for conical nozzle)
+nozzle.exit.angle = atan(dAdx(nozzle.geometry.length)/pi/D(nozzle.geometry.length))*180/pi;
+nozzle.divergenceFactor = (1 + cosd(nozzle.exit.angle))/2;
+
 massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
 nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
-nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
+nozzle.netThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
+nozzle.grossThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 
 % ========================== CALC STRESSES ===============================
 
@@ -452,6 +457,8 @@ nozzle.geometry.A = A(xPosition);
 nozzle.geometry.dAdx = dAdx(xPosition);
 nozzle.geometry.D = D(xPosition);
 nozzle.wall.t = t(xPosition);
+nozzle.geometry.maxSlope = max(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
+nozzle.geometry.minSlope = min(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
 
 % =================== CALC NOZZLE MATERIAL VOLUME ========================
 
