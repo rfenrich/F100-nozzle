@@ -61,7 +61,7 @@ Aeq(1,6) = 1; Aeq(1,7) = -1; beq(1) = 0; % 11th and 12th control point x-coordin
 Aeq(2,13) = 1; Aeq(2,14) = -1; beq(2) = 0; % 11th and 12th control point y-coordinate is the same
 
 % Set nonlinear inequality constraint function
-nonlconFun = @(r) exampleWrapper2(r,knots,coefs,'nonlcon');
+nonlconFun = @(r) exampleWrapper(r,knots,coefs,'nonlcon');
 
 % Set optimization options
 options.MaxIter = 50;
@@ -73,7 +73,7 @@ opttions.TolX = 1e-10;
 % Print data to screen
 fprintf('Number design variables: %i\n',n);
 
-objFun = @(r) exampleWrapper2(r,knots,coefs,'volume');
+objFun = @(r) exampleWrapper(r,knots,coefs,'volume');
 
 figure;
 hold on;

@@ -119,14 +119,14 @@ freestream.U = freestream.M*sqrt(fluid.gam*fluid.R*freestream.T);
 
 % ----------------- PRINT SOME USEFUL DATA TO SCREEN ---------------------
 fprintf('Nozzle Volume: %0.4f cm^3\n',nozzle.geometry.volume*100^3);
-fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.approxThrust);
+fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.netThrust);
 fprintf('Nozzle Mass Flow Rate: %0.4f kg/s\n',nozzle.massFlowRate);
 
 % ============================ OUTPUT DATA ===============================
 
 if (strcmp(output,'nonlcon')) % nonlinear constraint functions for this case
     Ceq = [];
-    C(1) = minRequiredThrust - nozzle.approxThrust; % should be <= 0
+    C(1) = minRequiredThrust - nozzle.netThrust; % should be <= 0
     C(2) = minMassFlowRate - nozzle.massFlowRate; % should be <= 0
     C(3) = nozzle.massFlowRate - maxMassFlowRate; % should be <= 0
     
