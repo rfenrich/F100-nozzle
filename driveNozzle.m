@@ -24,7 +24,7 @@ nozzle.wall.poissonRatio = 0.3; % Poisson ratio of nozzle wall
 % Define input parameters that will change based on flight regime:
 if(mission == 1) % static sea-level thrust case
     altitude = 0;
-    mach = 0;
+    mach = 0.01;
     nozzle.inlet.Tstag = 888.3658;
     nozzle.inlet.Pstag = 3.0550e5;
 elseif(mission == 2) % intermediate case
@@ -39,12 +39,12 @@ elseif(mission == 3) % high speed, high altitude case
     nozzle.inlet.Pstag = 1.44925e5;
 elseif(mission == 4) % case with shock in nozzle
     altitude = 0;
-    mach = 0.0;
+    mach = 0.01;
     nozzle.inlet.Tstag = 900;
     nozzle.inlet.Pstag = 1.3e5;
 elseif(mission == 5) % subsonic flow in nozzle
     altitude = 0;
-    mach = 0.0;
+    mach = 0.01;
     nozzle.inlet.Tstag = 900;
     nozzle.inlet.Pstag = 1.1e5;    
 end
@@ -58,7 +58,7 @@ error.solver.M2absolute = 1e-10;
 error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
 
 % ---------------------- SET NOZZLE GEOMETRY -----------------------------
-nozzle.geometry.shape = 'B-spline-mex'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
+nozzle.geometry.shape = 'B-spline'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
 if(strcmp(nozzle.geometry.shape,'spline')) 
     % To parameterize using a cubic spline, the following must be provided:
     % spline.seed = either a shape already defined in the nozzleGeometry.m 
@@ -149,11 +149,18 @@ else
 end
 fprintf('Wall Geo: %s\n',nozzle.wall.shape);
 
-[ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );
+%[ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );
 
 tic;
-[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error );
+%[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error );
 nonIdealTimeToExec = toc;
+
+boundaryCdt.Mref  = mach;
+boundaryCdt.PsRef = freestream.P;
+boundaryCdt.TsRef = freestream.T;
+boundaryCdt.TtIn  = nozzle.inlet.Tstag;
+boundaryCdt.PtIn  = nozzle.inlet.Pstag;
+[ nozzleCfd ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt );
 
 % ============================ OUTPUT DATA ===============================
 
