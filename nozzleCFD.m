@@ -50,7 +50,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	%% ======================= Get Nozzle Parameterization ==============
 	
 	%--- Inner wall
-	[ A, dAdx, D ] = nozzleParameterization( nozzle );
+	[ A, dAdx, D, nozzle ] = nozzleParameterization( nozzle );
 	
 	%--- Wall thickness
 	t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall);
@@ -126,11 +126,9 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	% ======================= POST PROCESSING ===============
 	
 	% Extract averaged solution values at the nozzle's exit
-	
-	nozzle = nozzleCFDPostPro('restart_flow.dat', nozzle);
+	nozzle = nozzleCFDPostPro('restart_flow.dat', nozzle, fluid);
 	
 	massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
-	nozzle.exit.Pstag = nozzle.inlet.Pstag*nozzle.PstagRatio;
 	nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
 	nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 	

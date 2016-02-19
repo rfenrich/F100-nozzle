@@ -20,8 +20,10 @@ function [NbrVer,dat,varNam] = ReadSU2Sol(fname)
 	i=1;
 	while ( ~feof(fid) )
 	 ll = fgetl(fid);
-	 tmp = sscanf(ll, '%f', NbrVar);
-	 dat(i,:) = tmp';
+	 %tmp = sscanf(ll, '%f', NbrVar);
+	 %dat(i,:) = tmp';
+     tmp = str2double(strsplit(ll));
+     dat(i,:) = tmp(1:NbrVar);
 	 i=i+1;
 	end
 	

@@ -1,5 +1,5 @@
 
-function [nozzle] = nozzleCFDPostPro(SolNam, nozzle)
+function [nozzle] = nozzleCFDPostPro(SolNam, nozzle, fluid)
 	
 	[NbrVer,dat,namVar] = ReadSU2Sol(SolNam);
 	
@@ -59,12 +59,12 @@ function [nozzle] = nozzleCFDPostPro(SolNam, nozzle)
 	hei = DatLin(NbvLin,iy)-DatLin(1,iy);
 	avgDat(1,:) = avgDat(1,:)/hei;
 	
-	%nozzle.exit.Pstag = nozzle.inlet.Pstag*nozzle.PstagRatio;
 	nozzle.exit.M = avgDat(1,iMach);
 	nozzle.exit.T = avgDat(1,iTem);
 	nozzle.exit.U = (avgDat(1,iCons2)+avgDat(1,iCons3))/avgDat(1,iCons1);
 	nozzle.exit.P = avgDat(1,iPres);
-	
+	nozzle.exit.Pstag = nozzle.exit.P*(1 + (fluid.gam-1)*nozzle.exit.M^2/2)^(fluid.gam/(fluid.gam-1));
+    
 	fprintf('\n -- Info: CFD results (averaged values at nozzle exit)\n');
 	fprintf('           Mach = %f\n', nozzle.exit.M );
 	fprintf('           Temp = %f\n', nozzle.exit.T );

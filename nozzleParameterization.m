@@ -1,4 +1,4 @@
-function [ A, dAdx, D ] = nozzleParameterization( nozzle )
+function [ A, dAdx, D, nozzle ] = nozzleParameterization( nozzle )
 	if(strcmp(nozzle.geometry.shape,'spline'))
 	    % set up spline for nozzle
 	    if(ischar(nozzle.geometry.spline.seed)) % seed shape is given
