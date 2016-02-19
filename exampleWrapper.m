@@ -17,13 +17,13 @@ function [varargout] = exampleWrapper(x,knots,coefs,output)
 % OUTPUTS:
 % varargout = output of wrapper specified by objective string in inputs
 %
-% Rick Fenrich 2/1/16
+% Rick Fenrich 2/17/16
 
 % ====================== ASSIGN DESIGN VARIABLES =========================
 
 % Redefine B-spline geometry using design variables
-coefs(1,6:12) = x(1:7);
-coefs(2,6:12) = x(8:14);
+coefs(1,6:16) = x(1:11);
+coefs(2,6:16) = x(12:22);
 nozzle.geometry.bSpline.knots = knots;
 nozzle.geometry.bSpline.coefs = coefs;
 
@@ -36,8 +36,10 @@ fprintf('\n');
 
 % ====================== SET CONSTRAINT CONSTANTS ========================
 minRequiredThrust = 25000; % N
-minMassFlowRate = 44; % kg/s
+minMassFlowRate = 30; % kg/s
 maxMassFlowRate = 46; % kg/s
+minWallSlope = -1.2;
+maxWallSlope = 1.2;
 
 % ========================== PREPARE INPUTS ==============================
 
@@ -49,7 +51,7 @@ nozzle.inlet.Tstag = 1021.5;
 nozzle.inlet.Pstag = 1.44925e5;
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------
-nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
+nozzle.hInf = 25; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % --------------------- SET MATERIAL PROPERTIES --------------------------
 % SEPCARBINOX A500, a ceramic matrix composite
@@ -126,9 +128,12 @@ fprintf('Nozzle Mass Flow Rate: %0.4f kg/s\n',nozzle.massFlowRate);
 
 if (strcmp(output,'nonlcon')) % nonlinear constraint functions for this case
     Ceq = [];
-    C(1) = minRequiredThrust - nozzle.netThrust; % should be <= 0
-    C(2) = minMassFlowRate - nozzle.massFlowRate; % should be <= 0
-    C(3) = nozzle.massFlowRate - maxMassFlowRate; % should be <= 0
+    
+    C(1) = -nozzle.geometry.minSlope + minWallSlope; % should be <= 0
+    C(2) = nozzle.geometry.maxSlope - maxWallSlope; % should be <= 0
+    C(3) = minMassFlowRate - nozzle.massFlowRate; % should be <= 0
+    C(4) = nozzle.massFlowRate - maxMassFlowRate; % should be <= 0
+    C(5) = minRequiredThrust - nozzle.netThrust; % should be <= 0
     
     varargout = {C Ceq}; % required return format by fmincon
 

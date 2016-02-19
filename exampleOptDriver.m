@@ -1,31 +1,35 @@
 % exampleOptDriver.m runs a deterministic optimization of nozzle shape 
 % for maximum thrust using Matlab's fmincon. The nozzle shape is
-% is parameterized using a 3rd degree B-spline. There are 14 design
-% variables, which correspond to the x and y coordinates of 7 control
+% is parameterized using a 3rd degree B-spline. There are 22 design
+% variables, which correspond to the x and y coordinates of 11 control
 % points. Inlet size of the nozzle is fixed. The optimization 
 % formulation is:
 %
 % min                    weight
 % s.t.             thrust >= 25,000 N
-%       44 kg/s <= mass flow rate <= 46 kg/s  --> for a well posed problem
+%       30 kg/s <= mass flow rate <= 46 kg/s  --> for a well posed problem
+%                  min(wall slope) >= -1.2
+%                  max(wall slope) <= 1.2
 %                       Ax <= b               --> constraints on relative control point movement
 %                    lb <= x <= b             --> constraints on individual control point movement
 %       where x is the vector of design variables
 %
-% Rick Fenrich 2/11/16
+% Converged in 390 seconds & 6 iterations
+%
+% Rick Fenrich 2/17/16
 
 clear all; close all; clc;
 
 % Set up initial B-spline shape
 Dinlet = 0.3255*2;
-knots = [0 0 0 0 1 2 3 4 5 6 7 8 9 9 9 9]';
-coefs = [0.0000 0.0000 0.1470 0.1578 0.1707 0.2180 0.2233 0.3186 0.4178 0.6008 0.6700 0.6700;
-         0.3255 0.3255 0.3255 0.3255 0.3255 0.3250 0.2945 0.2719 0.2944 0.3056 0.3050 0.3050];
+knots = [0 0 0 0 1:12 13 13 13 13]';
+coefs = [0.0000 0.0000 0.1500 0.1700 0.1900 0.2124 0.2269 0.2734 0.3218 0.3343 0.3474 0.4392 0.4828 0.5673 0.6700 0.6700;
+         0.3255 0.3255 0.3255 0.3255 0.3255 0.3238 0.2981 0.2817 0.2787 0.2790 0.2804 0.2936 0.2978 0.3049 0.3048 0.3048];
 
 % Set up design variables (x and y coordinates of middle 2 control points, 
 % and y coordinate of last control point)
-x(1:7) = coefs(1,6:12);
-x(8:14) = coefs(2,6:12);
+x(1:11) = coefs(1,6:16);
+x(12:22) = coefs(2,6:16);
 
 % Set up ranges of design variables
 lb = 0.8*x;
@@ -34,31 +38,33 @@ ub = 1.2*x;
 n = length(x); % number of design variables
 
 % Set up linear inequality constraints
-A = zeros(11,length(x)); % 11 constraints total
-b = zeros(11,1); 
-delta = 1e-3; % delta for spacing between control points, so code doesn't break
+A = zeros(23,length(x)); % 11 constraints total
+b = zeros(23,1); 
+delta = 1e-2; % delta for spacing between control points, so code doesn't break
 
-% x and y position constraints
-A(1,1) = -1; b(1) = -coefs(1,5) - delta*10; % 6th control point should remain to right of 5th
-A(2,1) = 1; A(2,2) = -1; b(2) = -delta*10; % 7th control point should remain to right of 6th c.p.
-A(3,2) = 1; A(3,3) = -1; b(3) = -delta*10; % 8th c.p.  " "
-A(4,3) = 1; A(4,4) = -1; b(4) = -delta*10; % 9th c.p.  " "
-A(5,4) = 1; A(5,5) = -1; b(5) = -delta*10; % 10th c.p.  " "
-A(6,5) = 1; A(6,6) = -1; b(6) = -delta*10; % 11th c.p.  " "
+% Control points cannot crossover
+A(1,1) = -1; b(1) = -coefs(1,5) - delta; % 6th control point should remain to right of 5th
+for ii = 2:10
+    A(ii,ii) = -1; A(ii,ii-1) = 1; b(ii) = -delta;
+end
 
-A(7,10) = 1; A(7,9) = -1; b(7) = -delta; % 8th c.p. should remain below 7th c.p.
-A(8,9) = 1; b(8) = Dinlet/2; % 7th c.p. should be below inlet height
-A(9,10) = 1; A(9,8) = -1; b(9) = -delta; % 8th c.p. should remain below 6th c.p.
-A(10,8) = 1; b(10) = Dinlet/2; % 6th c.p. should be below inlet height
+% Pre-throat area must not diverge
+for ii = 11:14
+    A(ii,ii+1) = 1; b(ii) = Dinlet/2;
+end
 
-A(11,10) = 1; A(11,11) = -1; b(11) = -delta; % 9th c.p. should remain above 8th c.p.
-A(12,10) = 1; A(12,12) = -1; b(12) = -delta*10; % 10th c.p. should remain above 8th c.p.
-A(13,10) = 1; A(13,13) = -1; b(13) = -delta*10; % 11th c.p. should remain above 8th c.p.
+% Throat must be lowest point
+for ii = 15:17
+    A(ii,15) = 1; A(ii,ii-3) = -1; b(ii) = delta;
+end
+for ii = 18:23
+    A(ii,15) = 1; A(ii,ii-2) = -1; b(ii) = delta;
+end
 
 % Set linear equality constraints so that nozzle inlet is fixed size
-Aeq = zeros(1,length(x));
-Aeq(1,6) = 1; Aeq(1,7) = -1; beq(1) = 0; % 11th and 12th control point x-coordinate is the same
-Aeq(2,13) = 1; Aeq(2,14) = -1; beq(2) = 0; % 11th and 12th control point y-coordinate is the same
+Aeq = zeros(2,length(x));
+Aeq(1,10) = 1; Aeq(1,11) = -1; beq(1) = 0; % 15th and 16th control point x-coordinate is the same
+Aeq(2,21) = 1; Aeq(2,22) = -1; beq(2) = 0; % 15th and 16th control point y-coordinate is the same
 
 % Set nonlinear inequality constraint function
 nonlconFun = @(r) exampleWrapper(r,knots,coefs,'nonlcon');
