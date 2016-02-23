@@ -1,4 +1,4 @@
-function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
+function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	% Victorien Menier Feb 2016
 	% INPUTS:
 	% nozzle geometry (i.e. border + wall thickness functions) 
@@ -14,13 +14,12 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	fprintf('\n\n--------------------------------------------------\n')
 	fprintf('------------------  NOZZLECFD ------------------\n')
 	fprintf('--------------------------------------------------\n\n')
-	
-	
-	
+		
+	nozzle.success = 0;
 	
 	% ========================== GAS PROPERTIES ==============================
 	gam = fluid.gam;
-	R = fluid.R;
+	R   = fluid.R;
 	
 	% Area-Mach function from mass 1-D mass conservation equations:
 	AreaMachFunc = @(g,M) ((g+1)/2)^((g+1)/(2*(g-1)))*M./(1+(g-1)*M.^2/2).^((g+1)/(2*(g-1)));
@@ -55,14 +54,46 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	%--- Wall thickness
 	t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall);
 	
+	% ========================== CFD : boundary conditions
+	
+	nozzle.boundaryCdt.Mref  = freestream.M;
+  nozzle.boundaryCdt.PsRef = freestream.P;
+  nozzle.boundaryCdt.TsRef = freestream.T;
+  nozzle.boundaryCdt.TtIn  = nozzle.inlet.Tstag;
+  nozzle.boundaryCdt.PtIn  = nozzle.inlet.Pstag;
+	nozzle.boundaryCdt.Uref  = freestream.U;
+	nozzle.boundaryCdt.MuRef = dynamicViscosity(freestream.T);
+
+	%--- RANS
+	nozzle.boundaryCdt.LRey = D(nozzle.geometry.length)/2;
+	
+	nozzle.boundaryCdt.RhoRef = freestream.P/(R*freestream.T);
+	nozzle.boundaryCdt.Re = nozzle.boundaryCdt.RhoRef*freestream.U*nozzle.boundaryCdt.LRey/nozzle.boundaryCdt.MuRef;
+	
+	
 	%% ======================= MESH GENERATION ===========================
 	
 	fprintf('  -- Info : Mesh generation.\n');
 	
-	% Mesh size?	
-	nozzle.sizWal = 0.01; % edge size around the nozzle wall
-	nozzle.sizFar = 0.4;  % max size for the farfield region
-	nozzle.sizSym = 0.1; % max size for the symmetry border
+	if ( strcmp(nozzle.meshSize,'coarse') ) 
+		% Mesh size? -> Cf NozzleCFDGmsh()	
+		nozzle.sizWal = 0.01;  % edge size around the nozzle wall
+		nozzle.sizFar = 0.4;   % max size for the farfield region
+		nozzle.sizSym = 0.1;   % max size for the symmetry border
+		nozzle.yplus  = 1.5;   % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
+	elseif ( strcmp(nozzle.meshSize,'medium') ) 
+		nozzle.sizWal = 0.01;
+		nozzle.sizFar = 0.4; 
+		nozzle.sizSym = 0.1; 
+		nozzle.yplus  = 1;
+	elseif ( strcmp(nozzle.meshSize,'fine') ) 
+		nozzle.sizWal = 0.01; 
+		nozzle.sizFar = 0.4; 
+		nozzle.sizSym = 0.1; 
+		nozzle.yplus  = 1;
+	end
+	
+
 	
 	xPosition = linspace(0,nozzle.geometry.length,100);
 	fprintf('           axinoz.geo (input file to gmsh) created.\n');
@@ -76,10 +107,11 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	fprintf('           Calling gmsh (Cf gmsh.job).\n');
 	!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
 	
+	
+	
 	if(exist('axinoz.mesh', 'file') ~= 2)
 	  error('  ## ERROR : gmsh failed to generate the mesh. See gmsh.job for more details.'); 
 	end
-	
 	
 	fprintf('           %% %s created.\n', 'axinoz.mesh');
 	
@@ -103,10 +135,11 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	fprintf('           %% %s created.\n', 'axinoz.su2');
 	
 	% ======================= RUN CFD SIMULATION (SU2) ===============
+		
 	
 	% Write data file (.cfg) for SU2
 	
-	writeSU2DataFile( boundaryCdt );
+	writeSU2DataFile( nozzle );
 	
 	if(exist('history.dat', 'file') == 2)
 	  delete('./history.dat');
@@ -115,8 +148,19 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	if(exist('restart_flow.dat', 'file') == 2)
 	  delete('./restart_flow.dat');
 	end
+	
+	if ( strcmp(nozzle.governing,'rans') )
+		tmp = input('  ## WARNING ! You might want to use an euler flow computation for now.\n Note: a viscous mesh was generated.\n Do you want to continue? (y/n) \n', 's');
+		if ( ~strcmp(tmp,'y') )
+			fprintf('STOP\n');
+			return;
+		else
+			fprintf('-> Continue\n');
+		end
+	end
+	
 	disp('  -- Info: running SU2 (Cf SU2.job )')
-	!SU2_CFD euler_nozzle.cfg >SU2.job
+	!SU2_CFD axinoz.cfg >SU2.job
 	
 	if(exist('restart_flow.dat', 'file') ~= 2)
 	  disp('  ## ERROR nozzleCFD : SU2 simulation failed.')
@@ -126,12 +170,12 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error, boundaryCdt )
 	% ======================= POST PROCESSING ===============
 	
 	% Extract averaged solution values at the nozzle's exit
-	nozzle = nozzleCFDPostPro('restart_flow.dat', nozzle, fluid);
-	
+	nozzle = nozzleCFDPostPro('restart_flow.dat', nozzle, fluid, freestream );
 	massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
-	nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
-	nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
+	%nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
+	%nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
+	%fprintf('  CFD thrust = %f\n', nozzle.approxThrust);
 	
-	fprintf('  CFD thrust = %f\n', nozzle.approxThrust);
+	nozzle.success = 1;
 
 end

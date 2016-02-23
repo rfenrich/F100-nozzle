@@ -1,34 +1,43 @@
 % 01-20-2015
 % Victorien Menier
 
-function [] = writeSU2DataFile ( boundaryCdt )
+function [] = writeSU2DataFile ( nozzle )
   
   % TODO later:
   % Adapt the parameters to the stiffness of the problem (CFL, nbr of sub-iterations of the Newton method, etc.)
+
+	rans = strcmp(nozzle.governing,'rans');
   
-  fprintf('  -- Info: Writing SU2 datafile euler_nozzle.cfg\n')
-  fprintf('           Freestream Mach:               %f\n'   ,boundaryCdt.Mref );
-  fprintf('           Freestream Static Pressure:    %f Pa\n',boundaryCdt.PsRef);
-  fprintf('           Freestream Static Temperature: %f K\n' ,boundaryCdt.TsRef);
-  fprintf('           Inlet Stagnation Pressure:     %f Pa\n',boundaryCdt.TtIn );
-  fprintf('           Inlet Stagnation Temperature:  %f K\n' ,boundaryCdt.PtIn );
-  %fprintf('           Outlet Static Pressure:        %f Pa\n',boundaryCdt.PsOut);
+  fprintf('  -- Info: Writing SU2 datafile axinoz.cfg\n')
+  fprintf('           Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
+  fprintf('           Freestream Static Pressure:    %f Pa\n',nozzle.boundaryCdt.PsRef);
+  fprintf('           Freestream Static Temperature: %f K\n' ,nozzle.boundaryCdt.TsRef);
+  fprintf('           Inlet Stagnation Pressure:     %f Pa\n',nozzle.boundaryCdt.TtIn );
+  fprintf('           Inlet Stagnation Temperature:  %f K\n' ,nozzle.boundaryCdt.PtIn );
+  %fprintf('           Outlet Static Pressure:        %f Pa\n',nozzle.boundaryCdt.PsOut);
   
-  DatOut=fopen('euler_nozzle.cfg','w');
+  DatOut=fopen('axinoz.cfg','w');
   
   fprintf(DatOut,'%% ------------- DIRECT, ADJOINT, AND LINEARIZED PROBLEM DEFINITION ------------%%  \n');
   fprintf(DatOut,'%% Physical governing equations (EULER, NAVIER_STOKES)                             \n');
-  fprintf(DatOut,' PHYSICAL_PROBLEM= EULER                                                           \n');
-  fprintf(DatOut,'%%                                                                                 \n');
+  
+	if ( ~rans )
+		fprintf(DatOut,' PHYSICAL_PROBLEM= EULER                                                           \n');
+  else
+		fprintf(DatOut,' PHYSICAL_PROBLEM= NAVIER_STOKES                                                   \n');
+		fprintf(DatOut,' KIND_TURB_MODEL= SA                                                               \n');
+	end
+	
+	fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Mathematical problem (DIRECT, CONTINUOUS_ADJOINT)                               \n');
   fprintf(DatOut,' MATH_PROBLEM= DIRECT                                                              \n');
   fprintf(DatOut,'%% Restart solution (NO, YES)                                                      \n');
   fprintf(DatOut,' RESTART_SOL= NO                                                                   \n');
   fprintf(DatOut,' SYSTEM_MEASUREMENTS= SI                                                           \n');
-  fprintf(DatOut,'%% -------------------- COMPRESSIBLE FREE-STREAM DEFINITION --------------------%%  \n');
+  fprintf(DatOut,'%% -------------------- COMPRESSIBLE FREE-STREAM DEFINITION --------------------%% \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Mach number (non-dimensional, based on the free-stream values)                  \n');
-  fprintf(DatOut,' MACH_NUMBER= %f                                                                   \n', boundaryCdt.Mref);
+  fprintf(DatOut,' MACH_NUMBER= %f                                                                   \n', nozzle.boundaryCdt.Mref);
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Angle of attack (degrees)                                                       \n');
   fprintf(DatOut,' AoA= 0.0                                                                          \n');
@@ -37,11 +46,19 @@ function [] = writeSU2DataFile ( boundaryCdt )
   fprintf(DatOut,' SIDESLIP_ANGLE= 0.0                                                               \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Free-stream pressure (101325.0 N/m^2 by default, only for Euler equations)      \n');
-  fprintf(DatOut,'FREESTREAM_PRESSURE= %f                                                            \n', boundaryCdt.PsRef);
+  fprintf(DatOut,'FREESTREAM_PRESSURE= %f                                                            \n', nozzle.boundaryCdt.PsRef);
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Free-stream temperature (288.15 K by default)                                   \n');
-  fprintf(DatOut,'FREESTREAM_TEMPERATURE= %f                                                         \n', boundaryCdt.TsRef);
-  fprintf(DatOut,'                                                                                    \n');
+  fprintf(DatOut,'FREESTREAM_TEMPERATURE= %f                                                         \n', nozzle.boundaryCdt.TsRef);
+
+	if ( rans )                                                                                        
+		fprintf(DatOut,'REYNOLDS_NUMBER= 2154263.930611                                                  \n');
+		fprintf(DatOut,'%                                                                                \n');
+		fprintf(DatOut,'% Reynolds length (1 m by default)                                               \n');
+		fprintf(DatOut,'REYNOLDS_LENGTH= 0.304800                                                        \n');
+	end
+
+  fprintf(DatOut,'                                                                                   \n');
   fprintf(DatOut,'%% ---------------------- REFERENCE VALUE DEFINITION ---------------------------%%  \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Reference origin for moment computation                                         \n');
@@ -60,26 +77,32 @@ function [] = writeSU2DataFile ( boundaryCdt )
   fprintf(DatOut,' REF_DIMENSIONALIZATION= DIMENSIONAL                                     \n');
   fprintf(DatOut,'                                                                                    \n');
   fprintf(DatOut,'%% ----------------------- BOUNDARY CONDITION DEFINITION -----------------------%%  \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Marker of the Euler boundary (0 implies no marker)                              \n');
-  fprintf(DatOut,' MARKER_EULER= ( 6, 7, 8, 9 )                                                        \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'                                                                                    \n');
+  fprintf(DatOut,'%%                                                                                  \n');
+  fprintf(DatOut,'%% Marker of the Euler boundary (0 implies no marker)                               \n');
+
+	if ( ~rans )
+  	fprintf(DatOut,' MARKER_EULER= ( 6, 7, 8, 9 )                                                     \n');
+	else 
+		fprintf(DatOut,'  MARKER_HEATFLUX= ( 6, 0.0, 7, 0.0, 8, 0.0, 9 , 0.0 )                            \n');
+	end
+	
+	fprintf(DatOut,'%%                                                                                 \n');
+  fprintf(DatOut,'                                                                                   \n');
   fprintf(DatOut,'%% Inlet boundary marker(s) (NONE = no marker)                                     \n');
   fprintf(DatOut,'%% Format: ( inlet marker, total temperature, total pressure, flow_direction_x,    \n');
   fprintf(DatOut,'%%           flow_direction_y, flow_direction_z, ... )                             \n');
 
 	% INLET CONDITIONS
 	
-  fprintf(DatOut,' MARKER_INLET= ( 10, %f, %f, 1.0, 0.0, 0.0,  ', boundaryCdt.TtIn, boundaryCdt.PtIn);
-	fprintf(DatOut,'  4, %f, %f, 1.0, 0.0, 0.0,  ', boundaryCdt.TsRef, boundaryCdt.PsRef);
-	fprintf(DatOut,'  5, %f, %f, 1.0, 0.0, 0.0 ) \n', boundaryCdt.TsRef, boundaryCdt.PsRef);
+  fprintf(DatOut,' MARKER_INLET= ( 10, %f, %f, 1.0, 0.0, 0.0,  ', nozzle.boundaryCdt.TtIn, nozzle.boundaryCdt.PtIn);
+	fprintf(DatOut,'  4, %f, %f, 1.0, 0.0, 0.0,  ', nozzle.boundaryCdt.TsRef, nozzle.boundaryCdt.PsRef);
+	fprintf(DatOut,'  5, %f, %f, 1.0, 0.0, 0.0 ) \n', nozzle.boundaryCdt.TsRef, nozzle.boundaryCdt.PsRef);
 	
-  fprintf(DatOut,'%% Marker of symmetry boundary (0 implies no marker)                               \n');
-  fprintf(DatOut,' MARKER_SYM= ( 1, 2 )                                                              \n');
+  fprintf(DatOut,'%% Marker of symmetry boundary (0 implies no marker)                                \n');
+  fprintf(DatOut,' MARKER_SYM= ( 1, 2 )                                                               \n');
   fprintf(DatOut,'                                                                                    \n');
-  fprintf(DatOut,' MARKER_OUTLET= ( 3, %f)                                                           \n', boundaryCdt.PsRef);
-  fprintf(DatOut,'%% = 0.89 * Ptot                                                                   \n');
+  fprintf(DatOut,' MARKER_OUTLET= ( 3, %f)                                                            \n', nozzle.boundaryCdt.PsRef);
+  fprintf(DatOut,'%% = 0.89 * Ptot                                                                    \n');
   fprintf(DatOut,'                                                                                    \n');
   fprintf(DatOut,'%% ------------- COMMON PARAMETERS TO DEFINE THE NUMERICAL METHOD --------------%%  \n');
   fprintf(DatOut,'%%                                                                                 \n');
@@ -109,7 +132,7 @@ function [] = writeSU2DataFile ( boundaryCdt )
   fprintf(DatOut,' RK_ALPHA_COEFF= ( 0.66667, 0.66667, 1.000000 )                                    \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Number of total iterations                                                      \n');
-  fprintf(DatOut,' EXT_ITER= 10                                                                   \n');
+  fprintf(DatOut,' EXT_ITER= 1000                                                                 \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Linear solver for the implicit formulation (BCGSTAB, FGMRES)                    \n');
   fprintf(DatOut,' LINEAR_SOLVER= FGMRES                                                             \n');
@@ -179,28 +202,16 @@ function [] = writeSU2DataFile ( boundaryCdt )
   fprintf(DatOut,'%% Time discretization (RUNGE-KUTTA_EXPLICIT, EULER_IMPLICIT, EULER_EXPLICIT)      \n');
   fprintf(DatOut,' TIME_DISCRE_FLOW= EULER_IMPLICIT                                                  \n');
   fprintf(DatOut,'                                                                                   \n');
-  %fprintf(DatOut,'%% ---------------- ADJOINT-FLOW NUMERICAL METHOD DEFINITION -------------------%% \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,'%% Convective numerical method (JST, LAX-FRIEDRICH, ROE)                           \n');
-  %fprintf(DatOut,' CONV_NUM_METHOD_ADJFLOW= JST                                                      \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,'%% Spatial numerical order integration (1ST_ORDER, 2ND_ORDER, 2ND_ORDER_LIMITER)   \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,' SPATIAL_ORDER_ADJFLOW= 2ND_ORDER                                                  \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,'%% Slope limiter (VENKATAKRISHNAN, SHARP_EDGES)                                    \n');
-  %fprintf(DatOut,' SLOPE_LIMITER_ADJFLOW= VENKATAKRISHNAN                                            \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,'%% 1st, 2nd, and 4th order artificial dissipation coefficients                     \n');
-  %fprintf(DatOut,' AD_COEFF_ADJFLOW= ( 0.15, 0.0, 0.02 )                                             \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,'%% Reduction factor of the CFL coefficient in the adjoint problem                  \n');
-  %fprintf(DatOut,' CFL_REDUCTION_ADJFLOW= 0.5                                                        \n');
-  %fprintf(DatOut,'%%                                                                                 \n');
-  %fprintf(DatOut,'%% Time discretization (RUNGE-KUTTA_EXPLICIT, EULER_IMPLICIT)                      \n');
-  %fprintf(DatOut,' TIME_DISCRE_ADJFLOW= EULER_IMPLICIT                                               \n');
-  %fprintf(DatOut,'                                                                                    \n');
-  %fprintf(DatOut,'                                                                                    \n');
+	
+	if ( rans ) 
+		fprintf(DatOut,'% -------------------- TURBULENT NUMERICAL METHOD DEFINITION ------------------%   \n');
+		fprintf(DatOut,'% Convective numerical method (SCALAR_UPWIND)                                      \n');
+		fprintf(DatOut,'CONV_NUM_METHOD_TURB= SCALAR_UPWIND                                                \n');                                                                               
+		fprintf(DatOut,'% Spatial numerical order integration (1ST_ORDER, 2ND_ORDER, 2ND_ORDER_LIMITER)    \n');
+		fprintf(DatOut,'SPATIAL_ORDER_TURB= 1ST_ORDER                                                      \n');
+		fprintf(DatOut,'TIME_DISCRE_TURB= EULER_IMPLICIT                                                   \n');
+	end
+	
   fprintf(DatOut,'%% --------------------------- CONVERGENCE PARAMETERS --------------------------&  \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Convergence criteria (CAUCHY, RESIDUAL)                                         \n');

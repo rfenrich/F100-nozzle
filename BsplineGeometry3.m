@@ -99,7 +99,7 @@ for ii = 1:length(x)
         u = uNew;
 
         [xEst, ~, dxduEst, ~] = uMap(knots,coefs,u);
-
+				
         if(dxduEst == 0)
             uNew = u;
         else
