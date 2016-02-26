@@ -169,12 +169,32 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	% ======================= POST PROCESSING ===============
 	
-	% Extract averaged solution values at the nozzle's exit
+	% Extract averaged solution values at the nozzle's exit (thrust and
+	% mass flow rate are integrated, not averaged)
 	nozzle = nozzleCFDPostPro('restart_flow.dat', nozzle, fluid, freestream );
-	massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
-	%nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
-	%nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
-	%fprintf('  CFD thrust = %f\n', nozzle.approxThrust);
+    
+    % ========================== CALC GEOMETRY ===============================
+
+    nozzle.xPosition = linspace(0,nozzle.geometry.length,500)';
+    nozzle.geometry.A = A(nozzle.xPosition);
+    nozzle.geometry.dAdx = dAdx(nozzle.xPosition);
+    nozzle.geometry.D = D(nozzle.xPosition);
+    nozzle.wall.t = t(nozzle.xPosition);
+    nozzle.geometry.maxSlope = max(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
+    nozzle.geometry.minSlope = min(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
+
+    % =================== CALC NOZZLE MATERIAL VOLUME ========================
+
+    % Volume calculation only works for spline parameterized nozzle geometry
+    % and piecewise-linear parameterized nozzle wall thickness
+    if(exist('pp','var')) % Exact volume for cubic spline parameterization
+        nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
+    else % Approximate volume using trapezoidal integration
+        xVolume = linspace(0,nozzle.geometry.length,500)';
+        volumeIntegrand = pi*D(xVolume).*t(xVolume) + pi*t(xVolume).^2;
+        nozzle.geometry.volume = (xVolume(2)-xVolume(1))*trapz(volumeIntegrand);
+    end
+
 	
 	nozzle.success = 1;
 
