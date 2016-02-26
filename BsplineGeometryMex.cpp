@@ -86,25 +86,25 @@ void uMap3(double *knots, double *coefs, double u, double *x, double *y, double*
     k5 = knots[jj+4];
     
     if(ii == 0) { // calculate basis N1
-      if( abs(k1-k2) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      if( fabs(k1-k2) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
       else {
         Ncurrent = (u-k1)/(k4-k1)*(u-k1)/(k3-k1)*(u-k1)/(k2-k1);
         dNducurrent = -(3*pow(k1 - u,2))/((k1 - k2)*(k1 - k3)*(k1 - k4));
       }
     } else if(ii == -1) { // calculate basis N2
-      if( abs(k2-k3) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      if( fabs(k2-k3) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
       else {
         Ncurrent = (u-k1)/(k4-k1)*((u-k1)/(k3-k1)*(k3-u)/(k3-k2) + (k4-u)/(k4-k2)*(u-k2)/(k3-k2)) + (k5-u)/(k5-k2)*(u-k2)/(k4-k2)*(u-k2)/(k3-k2);
         dNducurrent = (((k1 - u)*(k3 - u))/((k1 - k3)*(k2 - k3)) + ((k2 - u)*(k4 - u))/((k2 - k3)*(k2 - k4)))/(k1 - k4) + pow(k2 - u,2)/((k2 - k3)*(k2 - k4)*(k2 - k5)) + ((k5 - u)*(2*k2 - 2*u))/((k2 - k3)*(k2 - k4)*(k2 - k5)) + (2*(k1 - u)*(k1*k2 - k3*k4 - k1*u - k2*u + k3*u + k4*u))/((k1 - k3)*(k1 - k4)*(k2 - k3)*(k2 - k4));
       }    
     } else if(ii == -2) { // calculate basis N3
-      if( abs(k3-k4) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      if( fabs(k3-k4) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
       else {
         Ncurrent = (u-k1)/(k4-k1)*(k4-u)/(k4-k2)*(k4-u)/(k4-k3) + (k5-u)/(k5-k2)*((u-k2)/(k4-k2)*(k4-u)/(k4-k3) + (k5-u)/(k5-k3)*(u-k3)/(k4-k3));
         dNducurrent = - (((k2 - u)*(k4 - u))/((k2 - k4)*(k3 - k4)) + ((k3 - u)*(k5 - u))/((k3 - k4)*(k3 - k5)))/(k2 - k5) - pow(k4 - u,2)/((k1 - k4)*(k2 - k4)*(k3 - k4)) - ((k1 - u)*(2*k4 - 2*u))/((k1 - k4)*(k2 - k4)*(k3 - k4)) - (2*(k5 - u)*(k2*k3 - k4*k5 - k2*u - k3*u + k4*u + k5*u))/((k2 - k4)*(k2 - k5)*(k3 - k4)*(k3 - k5));
       }       
     } else { // calculate basis N4
-      if( abs(k4-k5) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
+      if( fabs(k4-k5) <= 1e-8) {Ncurrent = 0; dNducurrent = 0;}
       else {
         Ncurrent = (k5-u)/(k5-k2)*(k5-u)/(k5-k3)*(k5-u)/(k5-k4);  
         dNducurrent = (3*pow(k5 - u,2))/((k2 - k5)*(k3 - k5)*(k4 - k5));
@@ -200,6 +200,7 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
 	
 	// Outputs include: A, dAdx, D
   double *A, *dAdx, *D, *xThroat, *yThroat;
+  double *xdebug, *Ddebug;
   
 	/* Prepare output data */
   switch(outputResult) {
@@ -218,6 +219,13 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
   case 4: // return xThroat and yThroat
     mexErrMsgTxt("Calculations for throat currently not enabled in MEX file.");
     break;
+  case 8: // for debugging
+    nx = (mwSize)1000;
+    plhs[0] = mxCreateDoubleMatrix(nx,1,mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(nx,1,mxREAL);
+    xdebug = mxGetPr(plhs[0]);
+    Ddebug = mxGetPr(plhs[1]);
+    break;
   default:
     plhs[0] = mxCreateDoubleMatrix(nx,1,mxREAL);
     plhs[1] = mxCreateDoubleMatrix(nx,1,mxREAL);
@@ -227,9 +235,9 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
     D = mxGetPr(plhs[2]);
   }
 	
-	/* Check that spline degree = 2 or 3, since calculations are only valid
-	   for this degree, and for a knot vector spaced only with 0s or 1s */
-	if(p == 2) { 
+  /* Check that spline degree = 2 or 3, since calculations are only valid
+     for this degree, and for a knot vector spaced only with 0s or 1s */
+  if(p == 2) { 
     if(knots[0] != knots[1] && knots[1] != knots[2] && knots[2] != knots[3]) {
       mexErrMsgTxt("2nd degree B-spline implementation requires "
                    "first 3 knots to be identical.");
@@ -238,7 +246,7 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
       mexErrMsgTxt("2nd degree B-spline implementation requires "
                    "last 3 knots to be identical.");
     }    
-	} else if (p == 3) {
+  } else if (p == 3) {
     if(knots[0] != knots[1] && knots[1] != knots[2] && knots[2] != knots[3] && knots[3] != knots[4]) {
       mexErrMsgTxt("3rd degree B-spline implementation requires "
                    "first 4 knots to be identical.");
@@ -247,9 +255,9 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
       mexErrMsgTxt("3rd degree B-spline implementation requires "
                    "last 4 knots to be identical.");
     }
-	} else {
+    } else {
 		mexErrMsgTxt("Calculations are only for a spline of degree 2 or 3.");
-	}
+    }
 	
 	double *xKnot;
 	double *y, *dydx;
@@ -283,7 +291,7 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
         ftemp1 = g(coefs,knots,seg,c,uGuess,x[ii]);
         ftemp2 = dgdu(coefs,knots,seg,c,uGuess);
         u = uGuess - ftemp1/ftemp2;
-        if( abs((u-uGuess)/uGuess) <= 1e-6) {break;}
+        if( fabs((u-uGuess)/uGuess) <= 1e-6) {break;}
         uGuess = u;
       }
       
@@ -319,6 +327,7 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
     double u, uNew; // values of u used in Newton iterations
     double xEst, dxduEst; // estimated values of x and dxdu
     mwSize counter; // used to terminate Newton iterations
+    double errorMeasure; // used to record error in estimate of u
     for(mwSize ii = 0; ii < nx; ii++) {
     
       // Determine lower and upper bounds on u
@@ -344,10 +353,14 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
       // Perform 1 Newton iteration
       if(dxduEst < tolerance) { uNew = 0.; }
       else { uNew = u - (xEst - x[ii])/dxduEst; }
+      //mexPrintf("uNew: %f\n",uNew);
+      //mexPrintf("u: %f\n",u);
       
       // Perform remaining Newton iterations
       counter = 0;
-      while( abs((uNew-u)/uNew) > tolerance ) {
+      errorMeasure = fabs((uNew-u)/uNew);
+      //mexPrintf("errorMeasure: %f\n",errorMeasure);
+      while( errorMeasure > tolerance ) {
       
         u = uNew;
         //mexPrintf("u: %f\n",u);
@@ -363,7 +376,9 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
         
         counter = counter + 1;
         
-        if( counter > 10) { break; }
+        if( counter > 20) { break; }
+
+	errorMeasure = fabs((uNew-u)/uNew);
        
       }
       
@@ -404,6 +419,18 @@ void mexFunction(mwSize nlhs, mxArray *plhs[],  /* Output variables */
     break;
   case 4: // return xThroat and yThroat
     mexErrMsgTxt("Calculations for throat currently not enabled in MEX file.");
+    break;
+  case 8: // return x and D
+    double uTemp, xTemp, yTemp, dxduTemp, dyduTemp;
+    uTemp = 0.;
+    double du;
+    du = (double)knots[k-1]/(nx-1);
+    for(mwSize ii = 0; ii < nx; ii++) {
+      uMap3(knots,coefs,uTemp,&xTemp,&yTemp,&dxduTemp,&dyduTemp,k,c);
+      xdebug[ii] = xTemp;
+      Ddebug[ii] = yTemp*2;
+      uTemp += du;
+    }
     break;
   default:
     for(mwSize ii = 0; ii < nx; ii++) {
