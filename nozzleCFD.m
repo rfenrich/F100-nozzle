@@ -171,6 +171,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	%nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
 	%nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 	%fprintf('  CFD thrust = %f\n', nozzle.approxThrust);
+
 	
 	
 	% ====================== COMPUTE VOLUME

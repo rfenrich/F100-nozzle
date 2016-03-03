@@ -64,7 +64,7 @@ error.solver.M2absolute = 1e-10;
 error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
 
 % ---------------------- SET NOZZLE GEOMETRY -----------------------------
-nozzle.geometry.shape = 'B-spline'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
+nozzle.geometry.shape = 'B-spline-mex'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
 if(strcmp(nozzle.geometry.shape,'spline')) 
     % To parameterize using a cubic spline, the following must be provided:
     % spline.seed = either a shape already defined in the nozzleGeometry.m 
@@ -160,9 +160,11 @@ if(strcmp(fidelity,'low'))
 	[ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );
     tic;
 	[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error );
-    nonIdealTimeToExec = toc;
+    TimeToExec = toc;
 elseif(strcmp(fidelity,'med'))
+    tic;
     [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error);
+    TimeToExec = toc;
 else
     error('Incorrect fidelity specified.');
 end
@@ -176,13 +178,14 @@ fprintf('====== RESULTS ======\n');
 fprintf('Pstag ratio: %0.4f\n',nozzle.flow.Pstag(end)/nozzle.flow.Pstag(1));
 fprintf('Tstag ratio: %0.4f\n',nozzle.flow.Tstag(end)/nozzle.flow.Tstag(1));
 
+
 % Output other data useful for CFD simulation:
 fprintf('Freestream Mach: %0.2f\n',mach);
 fprintf('Freestream Static Pressure: %0.4f Pa\n',freestream.P);
 fprintf('Freestream Static Temperature: %0.4f K\n',freestream.T);
 fprintf('Inlet Stagnation Pressure: %0.4f Pa\n',nozzle.inlet.Pstag);
 fprintf('Inlet Stagnation Temperature: %0.4f K\n',nozzle.inlet.Tstag);
-fprintf('Outlet Static Pressure: %0.4f Pa\n',nozzle.flow.P(end));
+fprintf('Outlet Static Pressure: %0.4f Pa\n',nozzle.exit.P);
 
 fprintf('Nozzle Volume: %0.4f cm^3\n',nozzle.geometry.volume*100^3);
 fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.netThrust);
@@ -194,139 +197,139 @@ fprintf('Nozzle Est. Thrust: %0.4f N\n',nozzle.netThrust);
 set(groot,'defaultAxesColorOrder',[0 0 0; 1 0 0; 1 0.25 0; 0 1 0; 0 0 1])
 %set(groot,'defaultAxesLineStyleOrder','-|--|:');
 
-% -------------------- PLOT VARIOUS DATA IN 1 FIGURE ---------------------
-figure
-subplot(2,3,1); hold on
-plot(nozzle.xPosition,nozzle.geometry.D/2)
-plot(nozzle.xPosition,nozzle.geometry.D/2+nozzle.wall.t);
-plot(nozzle.xPosition,-nozzle.geometry.D/2);
-plot(nozzle.xPosition,-nozzle.geometry.D/2-nozzle.wall.t);
-title('Geometry')
-axis equal
-
-subplot(2,3,2); hold on
-plot(nozzleI.xPosition,nozzleI.flow.Re)
-plot(nozzle.xPosition,nozzle.flow.Re)
-title('Re')
-legend('ideal');
-
-subplot(2,3,3); hold on
-plot(nozzleI.xPosition,nozzleI.flow.M)
-plot(nozzle.xPosition,nozzle.flow.M)
-title('Mach Number')
-legend('ideal');
-
-subplot(2,3,4); hold on
-plot(nozzleI.xPosition,nozzleI.flow.P)
-plot(nozzle.xPosition,nozzle.flow.P)
-plot(nozzleI.xPosition,nozzleI.flow.Pstag)
-plot(nozzle.xPosition,nozzle.flow.Pstag)
-plot(nozzle.xPosition,freestream.P*ones(length(nozzle.xPosition),1))
-title('Pressure (Pa)')
-legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
-
-subplot(2,3,5); hold on
-plot(nozzleI.xPosition,nozzleI.flow.T)
-plot(nozzle.xPosition,nozzle.flow.T)
-plot(nozzleI.xPosition,nozzleI.flow.Tstag)
-plot(nozzle.xPosition,nozzle.flow.Tstag)
-plot(nozzle.xPosition,freestream.T*ones(length(nozzle.xPosition),1),'k-')
-title('Temperature (K)')
-legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
-
-subplot(2,3,6); hold on
-plot(nozzleI.xPosition,nozzleI.flow.density)
-plot(nozzle.xPosition,nozzle.flow.density)
-title('Density (kg/m^3)')
-legend('ideal');
-
-% ------------------------ PLOT NOZZLE GEOMETRY --------------------------
-figure; hold on
-plot(nozzle.xPosition,nozzle.geometry.D/2)
-plot(nozzle.xPosition,-nozzle.geometry.D/2)
-xlabel('Axial position (m)')
-title('Geometry')
-axis equal
-
-% ------------------------ PLOT REYNOLDS NUMBER --------------------------
-figure; hold on
-plot(nozzleI.xPosition,nozzleI.flow.Re)
-plot(nozzle.xPosition,nozzle.flow.Re)
-xlabel('Axial position (m)')
-title('Re')
-legend2 = legend('ideal');
-
-% ------------------------------ PLOT MACH -------------------------------
-figure; hold on
-plot(nozzleI.xPosition,nozzleI.flow.M)
-plot(nozzle.xPosition,nozzle.flow.M)
-xlabel('Axial position (m)')
-title('Mach Number')
-legend3 = legend('ideal');
-
-% --------------------------- PLOT PRESSURES -----------------------------
-figure; hold on
-plot(nozzleI.xPosition,nozzleI.flow.P)
-plot(nozzle.xPosition,nozzle.flow.P)
-plot(nozzleI.xPosition,nozzleI.flow.Pstag)
-plot(nozzle.xPosition,nozzle.flow.Pstag)
-plot(nozzle.xPosition,freestream.P*ones(length(nozzle.xPosition),1))
-xlabel('Axial position (m)')
-title('Pressure (Pa)')
-legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
-
-% ------------------------- PLOT TEMPERATURES ----------------------------
-figure; hold on
-hold on
-plot(nozzleI.xPosition,nozzleI.flow.T)
-plot(nozzle.xPosition,nozzle.flow.T)
-plot(nozzleI.xPosition,nozzleI.flow.Tstag)
-plot(nozzle.xPosition,nozzle.flow.Tstag)
-plot(nozzle.xPosition,freestream.T*ones(length(nozzle.xPosition),1),'k-')
-xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
-title('Temperature (K)','FontName','CMU Serif','FontSize',16)
-set(gca,'FontName','CMU Serif','FontSize',14)
-legend5 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
-set(legend5,'FontName','CMU Serif','FontSize',12)
-
-% ---------------------------- PLOT DENSITY ------------------------------
-figure; hold on
-plot(nozzleI.xPosition,nozzleI.flow.density)
-plot(nozzle.xPosition,nozzle.flow.density)
-xlabel('Axial position (m)')
-title('Density (kg/m^3)')
-legend6 = legend('ideal');
-
-% --------------------------- PLOT h_f & C_f -----------------------------
-figure
-subplot(1,2,1); hold on
-plot(nozzle.xPosition,nozzle.flow.hf)
-xlabel('Axial position (m)')
-title('Wall convection coefficient h_f (W/m^2-K)')
-subplot(1,2,2); hold on
-plot(nozzle.xPosition,nozzle.flow.Cf)
-xlabel('Axial position (m)')
-title('Friction coefficient C_f')
-
-% -------------------------- PLOT MAX STRESS -----------------------------
-figure
-plot(nozzle.xPosition,nozzle.maxStress/1e6)
-xlabel('Axial position (m)')
-title('Principal Stress (MPa)')
-
-% --------------------- PLOT TEMPERATURE PROFILES ------------------------
-figure
-hold on
-plot(nozzle.xPosition,nozzle.flow.T)
-plot(nozzle.xPosition,nozzle.flow.Tstag)
-plot(nozzle.xPosition,nozzle.Tw)
-plot(nozzle.xPosition,nozzle.Text)
-plot(nozzle.xPosition,freestream.T*ones(length(nozzle.flow.T)))
-title('Temperature profiles')
-xlabel('Axial position (m)')
-ylabel('Temperature (K)')
-legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
-
-% format plots to look nice
-formatPlot;
+% % -------------------- PLOT VARIOUS DATA IN 1 FIGURE ---------------------
+% figure
+% subplot(2,3,1); hold on
+% plot(nozzle.xPosition,nozzle.geometry.D/2)
+% plot(nozzle.xPosition,nozzle.geometry.D/2+nozzle.wall.t);
+% plot(nozzle.xPosition,-nozzle.geometry.D/2);
+% plot(nozzle.xPosition,-nozzle.geometry.D/2-nozzle.wall.t);
+% title('Geometry')
+% axis equal
+% 
+% subplot(2,3,2); hold on
+% plot(nozzleI.xPosition,nozzleI.flow.Re)
+% plot(nozzle.xPosition,nozzle.flow.Re)
+% title('Re')
+% legend('ideal');
+% 
+% subplot(2,3,3); hold on
+% plot(nozzleI.xPosition,nozzleI.flow.M)
+% plot(nozzle.xPosition,nozzle.flow.M)
+% title('Mach Number')
+% legend('ideal');
+% 
+% subplot(2,3,4); hold on
+% plot(nozzleI.xPosition,nozzleI.flow.P)
+% plot(nozzle.xPosition,nozzle.flow.P)
+% plot(nozzleI.xPosition,nozzleI.flow.Pstag)
+% plot(nozzle.xPosition,nozzle.flow.Pstag)
+% plot(nozzle.xPosition,freestream.P*ones(length(nozzle.xPosition),1))
+% title('Pressure (Pa)')
+% legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
+% 
+% subplot(2,3,5); hold on
+% plot(nozzleI.xPosition,nozzleI.flow.T)
+% plot(nozzle.xPosition,nozzle.flow.T)
+% plot(nozzleI.xPosition,nozzleI.flow.Tstag)
+% plot(nozzle.xPosition,nozzle.flow.Tstag)
+% plot(nozzle.xPosition,freestream.T*ones(length(nozzle.xPosition),1),'k-')
+% title('Temperature (K)')
+% legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty');
+% 
+% subplot(2,3,6); hold on
+% plot(nozzleI.xPosition,nozzleI.flow.density)
+% plot(nozzle.xPosition,nozzle.flow.density)
+% title('Density (kg/m^3)')
+% legend('ideal');
+% 
+% % ------------------------ PLOT NOZZLE GEOMETRY --------------------------
+% figure; hold on
+% plot(nozzle.xPosition,nozzle.geometry.D/2)
+% plot(nozzle.xPosition,-nozzle.geometry.D/2)
+% xlabel('Axial position (m)')
+% title('Geometry')
+% axis equal
+% 
+% % ------------------------ PLOT REYNOLDS NUMBER --------------------------
+% figure; hold on
+% plot(nozzleI.xPosition,nozzleI.flow.Re)
+% plot(nozzle.xPosition,nozzle.flow.Re)
+% xlabel('Axial position (m)')
+% title('Re')
+% legend2 = legend('ideal');
+% 
+% % ------------------------------ PLOT MACH -------------------------------
+% figure; hold on
+% plot(nozzleI.xPosition,nozzleI.flow.M)
+% plot(nozzle.xPosition,nozzle.flow.M)
+% xlabel('Axial position (m)')
+% title('Mach Number')
+% legend3 = legend('ideal');
+% 
+% % --------------------------- PLOT PRESSURES -----------------------------
+% figure; hold on
+% plot(nozzleI.xPosition,nozzleI.flow.P)
+% plot(nozzle.xPosition,nozzle.flow.P)
+% plot(nozzleI.xPosition,nozzleI.flow.Pstag)
+% plot(nozzle.xPosition,nozzle.flow.Pstag)
+% plot(nozzle.xPosition,freestream.P*ones(length(nozzle.xPosition),1))
+% xlabel('Axial position (m)')
+% title('Pressure (Pa)')
+% legend4 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
+% 
+% % ------------------------- PLOT TEMPERATURES ----------------------------
+% figure; hold on
+% hold on
+% plot(nozzleI.xPosition,nozzleI.flow.T)
+% plot(nozzle.xPosition,nozzle.flow.T)
+% plot(nozzleI.xPosition,nozzleI.flow.Tstag)
+% plot(nozzle.xPosition,nozzle.flow.Tstag)
+% plot(nozzle.xPosition,freestream.T*ones(length(nozzle.xPosition),1),'k-')
+% xlabel('Axial position (m)','FontName','CMU Serif','FontSize',14)
+% title('Temperature (K)','FontName','CMU Serif','FontSize',16)
+% set(gca,'FontName','CMU Serif','FontSize',14)
+% legend5 = legend('Static (ideal)','Static','Stag (ideal)','Stag','\infty','Location','EastOutside');
+% set(legend5,'FontName','CMU Serif','FontSize',12)
+% 
+% % ---------------------------- PLOT DENSITY ------------------------------
+% figure; hold on
+% plot(nozzleI.xPosition,nozzleI.flow.density)
+% plot(nozzle.xPosition,nozzle.flow.density)
+% xlabel('Axial position (m)')
+% title('Density (kg/m^3)')
+% legend6 = legend('ideal');
+% 
+% % --------------------------- PLOT h_f & C_f -----------------------------
+% figure
+% subplot(1,2,1); hold on
+% plot(nozzle.xPosition,nozzle.flow.hf)
+% xlabel('Axial position (m)')
+% title('Wall convection coefficient h_f (W/m^2-K)')
+% subplot(1,2,2); hold on
+% plot(nozzle.xPosition,nozzle.flow.Cf)
+% xlabel('Axial position (m)')
+% title('Friction coefficient C_f')
+% 
+% % -------------------------- PLOT MAX STRESS -----------------------------
+% figure
+% plot(nozzle.xPosition,nozzle.maxStress/1e6)
+% xlabel('Axial position (m)')
+% title('Principal Stress (MPa)')
+% 
+% % --------------------- PLOT TEMPERATURE PROFILES ------------------------
+% figure
+% hold on
+% plot(nozzle.xPosition,nozzle.flow.T)
+% plot(nozzle.xPosition,nozzle.flow.Tstag)
+% plot(nozzle.xPosition,nozzle.Tw)
+% plot(nozzle.xPosition,nozzle.Text)
+% plot(nozzle.xPosition,freestream.T*ones(length(nozzle.flow.T)))
+% title('Temperature profiles')
+% xlabel('Axial position (m)')
+% ylabel('Temperature (K)')
+% legend('T', 'T_{stag}', 'T_{w,int}', 'T_{w,ext}','T_{\infty}','Location','EastOutside');
+% 
+% % format plots to look nice
+% formatPlot;
 

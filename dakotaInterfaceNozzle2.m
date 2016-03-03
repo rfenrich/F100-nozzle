@@ -192,7 +192,6 @@ end
 
 fprintf('  -- Thrust     = %f\n', nozzle.netThrust);
 
-
 fid = fopen(results_file,'w');
 fprintf(fid,'%.16e thrust\n',nozzle.netThrust);
 fprintf(fid,'%.16e maxStress\n',max(nozzle.hoopStress));

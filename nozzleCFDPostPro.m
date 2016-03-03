@@ -8,9 +8,11 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	namVar = Sol.NamVar;
 	
 	NbrVar = size(namVar,2);
-	xextract = 0.67; % x coordinate of the exit
-	
+	xextract = nozzle.geometry.length; % x coordinate of the exit
+    
+
 	thrust = 0;
+    mdot = 0; % mass flow rate
 	
 	ix     = -1;
 	iMach  = -1;
@@ -98,6 +100,7 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 		% --- Compute thrust
 		% T = 2PI * Int_{0}^{R} (rho U ( U - U0) + P - Po ) r dr
 		thrust = thrust + dy*(rhoU*(U-U0)+P-P0);
+        mdot = mdot + dy*rhoU;
 		
   end
 		
@@ -123,14 +126,17 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	nozzle.exit.U = (avgDat(1,iCons2)+avgDat(1,iCons3))/avgDat(1,iCons1);
 	nozzle.exit.P = avgDat(1,iPres);
 	nozzle.exit.Pstag = nozzle.exit.P*(1 + (fluid.gam-1)*nozzle.exit.M^2/2)^(fluid.gam/(fluid.gam-1));
-  nozzle.netThrust = thrust;
 
-	
-	fprintf('\n	-- CFD results (averaged values at nozzle exit)\n');
-	fprintf('		Mach   = %f\n', nozzle.exit.M );
-	fprintf('		Temp   = %f K\n', nozzle.exit.T );
-	fprintf('		Vel    = %f m/s\n', nozzle.exit.U );
-	fprintf('		Pres   = %f Pa\n', nozzle.exit.P );
-	fprintf('		Thrust = %f N\n', nozzle.netThrust );
+  nozzle.exit.Tstag = nozzle.exit.T*(1 + (fluid.gam-1)*nozzle.exit.M^2/2);
+  nozzle.netThrust = thrust;
+  nozzle.massFlowRate = mdot;
+  
+	fprintf('\n -- Info: CFD results (averaged values at nozzle exit)\n');
+	fprintf('           Mach   = %f\n', nozzle.exit.M );
+	fprintf('           Temp   = %f K\n', nozzle.exit.T );
+	fprintf('           Vel    = %f m/s\n', nozzle.exit.U );
+	fprintf('           Pres   = %f Pa\n', nozzle.exit.P );
+	fprintf('           Thrust = %f N\n', nozzle.netThrust );
+
 	
 end
