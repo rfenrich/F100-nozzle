@@ -254,6 +254,7 @@ while ~converged
     flow.density = flow.P./(R*flow.T); % density
     flow.U = flow.M.*sqrt(gam*R*flow.T); % velocity
     flow.Re = flow.density.*flow.U.*D(xPosition)./dynamicViscosity(flow.T); % Reynolds number from definition
+		
 
     % =================== RECALCULATE FRICTION & HEAT ========================
 
@@ -337,11 +338,17 @@ nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inle
 nozzle.netThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 nozzle.grossThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 
+%
+%nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
+%thrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
+%
 % ========================== CALC STRESSES ===============================
 
 nozzle.hoopStress = flow.P.*D(xPosition)./(2*t(xPosition));
 nozzle.thermalHoopStress = 0.5*(nozzle.Tw-nozzle.Text)*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
 %nozzle.thermalLongitudinalStress = 0.5*tempDiff*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
+
+
 
 nozzle.maxStress = nozzle.hoopStress + nozzle.thermalHoopStress;
 
@@ -368,9 +375,9 @@ else % Approximate volume using trapezoidal integration
 end
 
 % ========================== PLOT GEOMETRY ===============================
-plot(nozzle.xPosition,nozzle.geometry.D/2)
-axis equal
-drawnow
+%plot(nozzle.xPosition,nozzle.geometry.D/2)
+%axis equal
+%drawnow
 
 end
 

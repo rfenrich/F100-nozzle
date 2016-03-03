@@ -68,19 +68,19 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	nozzle.boundaryCdt.LRey = D(nozzle.geometry.length)/2;
 	
 	nozzle.boundaryCdt.RhoRef = freestream.P/(R*freestream.T);
-	nozzle.boundaryCdt.Re = nozzle.boundaryCdt.RhoRef*freestream.U*nozzle.boundaryCdt.LRey/nozzle.boundaryCdt.MuRef;
+	nozzle.boundaryCdt.Re     = nozzle.boundaryCdt.RhoRef*freestream.U*nozzle.boundaryCdt.LRey/nozzle.boundaryCdt.MuRef;
 	
 	
 	%% ======================= MESH GENERATION ===========================
 	
-	fprintf('  -- Info : Mesh generation.\n');
+	fprintf('	-- Mesh generation.\n');
 	
 	if ( strcmp(nozzle.meshSize,'coarse') ) 
 		% Mesh size? -> Cf NozzleCFDGmsh()	
 		nozzle.sizWal = 0.01;  % edge size around the nozzle wall
 		nozzle.sizFar = 0.4;   % max size for the farfield region
 		nozzle.sizSym = 0.1;   % max size for the symmetry border
-		nozzle.yplus  = 1.5;   % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
+		nozzle.yplus  = 2;   % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
 	elseif ( strcmp(nozzle.meshSize,'medium') ) 
 		nozzle.sizWal = 0.01;
 		nozzle.sizFar = 0.4; 
@@ -93,10 +93,8 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 		nozzle.yplus  = 1;
 	end
 	
-
-	
 	xPosition = linspace(0,nozzle.geometry.length,100);
-	fprintf('           axinoz.geo (input file to gmsh) created.\n');
+	fprintf('		axinoz.geo (input file to gmsh) created.\n');
 	%nozzleCFDGmsh(nozzle, xPosition, A(xPosition') )
 	nozzleCFDGmsh(nozzle, xPosition, D(xPosition')/2 )
 	
@@ -104,16 +102,14 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	  delete('axinoz.mesh'); 
 	end
 	
-	fprintf('           Calling gmsh (Cf gmsh.job).\n');
+	fprintf('		Calling gmsh (Cf gmsh.job).\n');
 	!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
-	
-	
 	
 	if(exist('axinoz.mesh', 'file') ~= 2)
 	  error('  ## ERROR : gmsh failed to generate the mesh. See gmsh.job for more details.'); 
 	end
 	
-	fprintf('           %% %s created.\n', 'axinoz.mesh');
+	fprintf('		%% %s created.\n', 'axinoz.mesh');
 	
 	%--- Convert to SU2 file format
 	
@@ -121,7 +117,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	  delete('axinoz.su2'); 
 	end
 	
-	fprintf('           Mesh pre-processing/conversion to .su2\n');
+	fprintf('		Mesh pre-processing/conversion to .su2\n');
 	meshGMF = ReadGMF('axinoz.mesh');
 	meshGMF = meshPrepro(meshGMF);
 	meshSU2 = convertGMFtoSU2(meshGMF);
@@ -132,11 +128,9 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 		return;
 	end
 	
-	fprintf('           %% %s created.\n', 'axinoz.su2');
+	fprintf('		%% %s created.\n', 'axinoz.su2');
 	
 	% ======================= RUN CFD SIMULATION (SU2) ===============
-		
-	
 	% Write data file (.cfg) for SU2
 	
 	writeSU2DataFile( nozzle );
@@ -159,7 +153,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 		end
 	end
 	
-	disp('  -- Info: running SU2 (Cf SU2.job )')
+	disp('	-- Running SU2 (Cf SU2.job )')
 	!SU2_CFD axinoz.cfg >SU2.job
 	
 	if(exist('restart_flow.dat', 'file') ~= 2)
@@ -169,12 +163,20 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	% ======================= POST PROCESSING ===============
 	
+	SolSU2 = ReadSU2Sol('restart_flow.dat');
+	
 	% Extract averaged solution values at the nozzle's exit
-	nozzle = nozzleCFDPostPro('restart_flow.dat', nozzle, fluid, freestream );
+	nozzle = nozzleCFDPostPro(meshSU2, SolSU2, nozzle, fluid, freestream);
 	massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
 	%nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
 	%nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 	%fprintf('  CFD thrust = %f\n', nozzle.approxThrust);
+	
+	
+	% ====================== COMPUTE VOLUME
+	xVolume = linspace(0,nozzle.geometry.length,500)';
+  volumeIntegrand = pi*D(xVolume).*t(xVolume) + pi*t(xVolume).^2;
+  nozzle.geometry.volume = (xVolume(2)-xVolume(1))*trapz(volumeIntegrand);
 	
 	nozzle.success = 1;
 

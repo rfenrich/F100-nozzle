@@ -23,7 +23,7 @@ function [ A, dAdx, D, nozzle ] = nozzleParameterization( nozzle )
 	            end
 	        end
 	    end
-
+			
 	    slopes = nozzle.geometry.spline.slopes;
 	    pp = spline(xNode,[slopes(1); yNode; slopes(2)]); % perform piecewise cubic spline interpolation
 

@@ -26,7 +26,7 @@ function [meshGMF] = meshPrepro(meshGMF)
 	vidNew = [1:NbrVerNew]';
 	
 	tag(idx)=vidNew;
-		
+	
 	%--- Compress vertices	
 	
 	meshGMF.Ver = meshGMF.Ver(idx,:);

@@ -8,6 +8,7 @@ clear all; close all;
 
 % ========================== INPUT PARAMETERS =============================
 
+
 altitude = NaN;
 mach = NaN;
 
@@ -109,6 +110,8 @@ nozzle.geometry.length = 1;
 rInlet = 0.3255;
 % rThroat = 0.278296628003098;
 % rExit = 0.329285010926785;
+nozzle.wall.coeffThermalExpansion = 2.3e-6;
+
 
 nozzle.inlet.D = rInlet*2;
 nozzle.geometry.Ainlet2Athroat = rInlet^2/rThroat^2;
@@ -158,7 +161,7 @@ thrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - f
 fid = fopen(results_file,'w');
 fprintf(fid,'%.16e thrust\n',thrust);
 fprintf(fid,'%.16e maxStress\n',max(nozzle.hoopStress));
-fprintf(fid,'%.16e maxTemp\n',max(nozzle.Tw));
+fprintf(fid,'%.16e maxTemp\n',nozzle.Tstag);
 fprintf(fid,'%.16e volume\n',nozzle.geometry.volume);
 fclose(fid);
 

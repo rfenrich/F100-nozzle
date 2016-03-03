@@ -14,13 +14,11 @@ function [meshSU2] = convertGMFtoSU2 (meshGMF)
 	meshSU2.mark(1).nelem = 0;
 	meshSU2.mark(1).elem  = [0];
 	
-	
 	if meshGMF.Dim == 2
 		meshSU2.nelem = meshGMF.NbrTri;
 	else
 		meshSU2.nelem = meshGMF.NbrTet;
 	end
-	
 	
 	% Vertices
 	meshSU2.poin = [meshGMF.Ver(:,1:2), [0:1:meshGMF.NbrVer-1]'];

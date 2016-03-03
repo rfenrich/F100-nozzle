@@ -8,7 +8,7 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 3; % mission number for which certain input parameters are defined below
+mission = 2; % mission number for which certain input parameters are defined below
 fidelity = 'med'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
 
 % ============= Options for mid-fidelity (used only if fidelity=='med')
@@ -169,8 +169,10 @@ end
 
 % ============================ OUTPUT DATA ===============================
 
+return;
+
 fprintf('====== RESULTS ======\n');
-fprintf('Non-ideal nozzle time to execute: %0.3f\n',nonIdealTimeToExec);
+%fprintf('Non-ideal nozzle time to execute: %0.3f\n',nonIdealTimeToExec);
 fprintf('Pstag ratio: %0.4f\n',nozzle.flow.Pstag(end)/nozzle.flow.Pstag(1));
 fprintf('Tstag ratio: %0.4f\n',nozzle.flow.Tstag(end)/nozzle.flow.Tstag(1));
 

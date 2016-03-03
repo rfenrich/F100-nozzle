@@ -8,12 +8,12 @@ function [] = writeSU2DataFile ( nozzle )
 
 	rans = strcmp(nozzle.governing,'rans');
   
-  fprintf('  -- Info: Writing SU2 datafile axinoz.cfg\n')
-  fprintf('           Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
-  fprintf('           Freestream Static Pressure:    %f Pa\n',nozzle.boundaryCdt.PsRef);
-  fprintf('           Freestream Static Temperature: %f K\n' ,nozzle.boundaryCdt.TsRef);
-  fprintf('           Inlet Stagnation Pressure:     %f Pa\n',nozzle.boundaryCdt.TtIn );
-  fprintf('           Inlet Stagnation Temperature:  %f K\n' ,nozzle.boundaryCdt.PtIn );
+  fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
+  fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
+  fprintf('		Freestream Static Pressure:    %f Pa\n',nozzle.boundaryCdt.PsRef);
+  fprintf('		Freestream Static Temperature: %f K\n' ,nozzle.boundaryCdt.TsRef);
+  fprintf('		Inlet Stagnation Pressure:     %f Pa\n',nozzle.boundaryCdt.TtIn );
+  fprintf('		Inlet Stagnation Temperature:  %f K\n' ,nozzle.boundaryCdt.PtIn );
   %fprintf('           Outlet Static Pressure:        %f Pa\n',nozzle.boundaryCdt.PsOut);
   
   DatOut=fopen('axinoz.cfg','w');
@@ -119,7 +119,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,'%% OBJECTIVE_FUNCTION= DRAG                                                          \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Courant-Friedrichs-Lewy condition of the finest grid                            \n');
-  fprintf(DatOut,' CFL_NUMBER= 5                                                                  \n');
+  fprintf(DatOut,' CFL_NUMBER= 25                                                                  \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Adaptive CFL number (NO, YES)                                                   \n');
   fprintf(DatOut,' CFL_ADAPT= NO                                                                    \n');
@@ -132,7 +132,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' RK_ALPHA_COEFF= ( 0.66667, 0.66667, 1.000000 )                                    \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Number of total iterations                                                      \n');
-  fprintf(DatOut,' EXT_ITER= 1000                                                                 \n');
+  fprintf(DatOut,' EXT_ITER= 500                                                                 \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Linear solver for the implicit formulation (BCGSTAB, FGMRES)                    \n');
   fprintf(DatOut,' LINEAR_SOLVER= FGMRES                                                             \n');

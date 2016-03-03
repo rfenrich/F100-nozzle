@@ -1,4 +1,4 @@
-function [NbrVer,dat,varNam] = ReadSU2Sol(fname)
+function [SolSU2] = ReadSU2Sol(fname)
 	
 	dat=[];
 	
@@ -28,5 +28,9 @@ function [NbrVer,dat,varNam] = ReadSU2Sol(fname)
 	end
 	
 	NbrVer=i-1;
+	
+	SolSU2.NbrVer = NbrVer;
+	SolSU2.Dat    = dat;
+	SolSU2.NamVar = varNam;
 	
 end
