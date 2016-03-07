@@ -31,9 +31,9 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 		elseif ( strcmp(namVar(i),'"y"') ) 
 			iy = i;
 		elseif ( strcmp(namVar(i),'"Mach"') ) 
-			iVid = i;
-		elseif ( strcmp(namVar(i),'"PointID"') ) 
 			iMach = i;
+		elseif ( strcmp(namVar(i),'"PointID"') ) 
+			iVid = i;
 		elseif ( strcmp(namVar(i),'"Temperature"') ) 
 			iTem = i;
 		elseif ( strcmp(namVar(i),'"Conservative_1"') ) 
@@ -101,7 +101,6 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 		% T = 2PI * Int_{0}^{R} (rho U ( U - U0) + P - Po ) r dr
 		thrust = thrust + dy*(rhoU*(U-U0)+P-P0);
         mdot = mdot + dy*rhoU;
-		
   end
 		
 	hei = DatLin(NbvLin,iy)-DatLin(1,iy);
@@ -111,7 +110,7 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	
 	P = dat(:,iPres);
 	Pq = griddata(x,y,P,xq,yq);
-		
+	
 	nozzle.hoopStress = prod([Pq(Nj,:) ;D(xq(1,:))';1./(2*t(xq(1,:))')])
 
 	% --- Compute
@@ -137,6 +136,5 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	fprintf('           Vel    = %f m/s\n', nozzle.exit.U );
 	fprintf('           Pres   = %f Pa\n', nozzle.exit.P );
 	fprintf('           Thrust = %f N\n', nozzle.netThrust );
-
 	
 end
