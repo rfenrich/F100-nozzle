@@ -77,19 +77,19 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	if ( strcmp(nozzle.meshSize,'coarse') ) 
 		% Mesh size? -> Cf NozzleCFDGmsh()	
-		nozzle.sizWal = 0.01;  % edge size around the nozzle wall
-		nozzle.sizFar = 0.4;   % max size for the farfield region
-		nozzle.sizSym = 0.1;   % max size for the symmetry border
-		nozzle.yplus  = 2;   % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
+		nozzle.sizWal = 0.008;  % edge size around the nozzle wall
+		nozzle.sizFar = 0.4;    % max size for the farfield region
+		nozzle.sizSym = 0.08;   % max size for the symmetry border
+		nozzle.yplus  = 2;      % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
 	elseif ( strcmp(nozzle.meshSize,'medium') ) 
-		nozzle.sizWal = 0.01;
+		nozzle.sizWal = 0.005;
 		nozzle.sizFar = 0.4; 
-		nozzle.sizSym = 0.1; 
-		nozzle.yplus  = 1;
+		nozzle.sizSym = 0.05; 
+		nozzle.yplus  = 1.5;
 	elseif ( strcmp(nozzle.meshSize,'fine') ) 
-		nozzle.sizWal = 0.01; 
+		nozzle.sizWal = 0.0025; 
 		nozzle.sizFar = 0.4; 
-		nozzle.sizSym = 0.1; 
+		nozzle.sizSym = 0.025; 
 		nozzle.yplus  = 1;
 	end
 	
