@@ -201,6 +201,10 @@ nozzle.grossThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U)
 
 nozzle.hoopStress = flow.P.*D(xPosition)./(2*t(xPosition));
 
+% ==================== CALC CYCLES TO FAILURE NF =========================
+
+nozzle.Nf = estimateNf(nozzle.Tw,nozzle.maxStress,1);
+
 % ========================== CALC GEOMETRY ===============================
 
 nozzle.xPosition = xPosition;

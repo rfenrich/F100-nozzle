@@ -1,4 +1,4 @@
-function [ Nf ] = estimateNf( maxTemp, maxStress, deltat )
+function [ Nf ] = estimateNf( maxTempVec, maxStressVec, deltat )
 % estimateNf.m very roughly estimates the number of cycles to failure Nf
 % for a 2-D test piece of the SiOC Next 312 ceramic matrix composite
 % material. All material data is extracted from the characterization of the
@@ -14,10 +14,12 @@ function [ Nf ] = estimateNf( maxTemp, maxStress, deltat )
 % effects), due to oxidation, and due to creep (likely the dominant
 % mechanism for high stress, high temperature loading).
 %
+% Note if maxTempVec and maxStressVec are vectors then an Nf value will be
+% calculate for each pair of elements from the vectors.
+%
 % INPUTS:
-% maxTemp = a temperature (K) to use in estimate of Nf (usually the max)
-% maxStress = a stress (Pa) to use in estimate of Nf (usually the max, 
-%       should probably be colocated with the maxTemp)
+% maxTempVec = a vector or scalar temperature (K) to use in estimate of Nf
+% maxStressVec = a vector or scalar stress (Pa) to use in estimate of Nf
 % deltat = the period in hours of each fatigue cycle (required since Nf due
 %       to fatigue is based on an S-n diagram, but Nf due to oxidation and
 %       creep is calculated from total lifetime hours --> how long is each
@@ -27,104 +29,169 @@ function [ Nf ] = estimateNf( maxTemp, maxStress, deltat )
 % Nf = a structure containing cycles to failure for fatigue, oxidation,
 %       creep, and combined (total)
 %
-% Rick Fenrich 3/16/16
+% Rick Fenrich 3/21/16
 
-% Assume minimum stress is 0.
-stressRange = maxStress;
+Nf.total = zeros(length(maxTempVec),1);
+Nf.fatigue = zeros(length(maxTempVec),1);
+Nf.oxidation = zeros(length(maxTempVec),1);
+Nf.creep = zeros(length(maxTempVec),1);
 
-% ===================== ESTIMATE Nf DUE TO FATIGUE =======================
-% Oxidation has a small effect on residual strength; it is neglected here.
-% Fatigue life is estimated (quite poorly) using only two data points and
-% assuming linear behavior on a log-log S-n plot with no lower fatigue
-% limit.
+for mm = 1:length(maxTempVec)
+    
+    maxTemp = maxTempVec(mm);
+    maxStress = maxStressVec(mm);
 
-data.fatigue.stressRange = ([69; 41] - 14)*1e6; % stress range in Pa
-data.fatigue.Nf = [13880; 120000];
-%loglog(data.fatigue.Nf,data.fatigue.deltaSigma);
-Nf.fatigue = exp(interp1(log(data.fatigue.stressRange),log(data.fatigue.Nf),log(stressRange),'linear','extrap'));
+    % Assume minimum stress is 0.
+    stressRange = maxStress;
 
-% ==================== ESTIMATE Nf DUE TO OXIDATION ======================
-% The only data with explicit temperature dependence is for flexural
-% strength, which may be higher than the yield strength of this material.
-% Nevertheless, for a given stress and temperature, the lifetime in hours
-% is extracted from a table using interpolation.
+    % ===================== ESTIMATE Nf DUE TO FATIGUE =======================
+    % Oxidation has a small effect on residual strength; it is neglected here.
+    % Fatigue life is estimated (quite poorly) using only two data points and
+    % assuming linear behavior on a log-log S-n plot with no lower fatigue
+    % limit.
 
-data.oxidation.stress = [215.7, 223.5, 244.2, 275.4, 270.4, 226.7, 216.0;
-                         215.7, 218.5, 240.1, 229.8, 205.5, 132.6, 75.9;
-                         215.7, 222.3, 234.0, 132.8, 87.1, 74.0, 73.4]'; % MPa
-data.oxidation.temp = [500, 600, 700]' + 273.15; % K
-data.oxidation.time = [0, 24, 100, 500, 1000, 2000, 4000]'; % hours
-% figure; hold on;
-% for ii = 1:length(data.oxidation.temp)
-%     plot(data.oxidation.time,data.oxidation.stress(:,ii));
-% end
-% legend('773 K','873 K','973 K');
+    data.fatigue.stressRange = ([69; 41] - 14)*1e6; % stress range in Pa
+    data.fatigue.Nf = [13880; 120000];
+    %loglog(data.fatigue.Nf,data.fatigue.deltaSigma);
+    Nf.fatigue(mm) = exp(interp1(log(data.fatigue.stressRange),log(data.fatigue.Nf),log(stressRange),'linear','extrap'));
 
-% Modify data.oxidation.stress so that the lifetime of a part that would
-% have failed at time 0 does not have a lifetime greater than 0 (due to the
-% "hill" in the beginning of the data).
-data.oxidation.stress(:,1) = 215.7*ones(length(data.oxidation.stress),1);
-data.oxidation.stress(2:4,2) = data.oxidation.stress(1,2);
-data.oxidation.stress(2:3,3) = data.oxidation.stress(1,3);
-% Modify data.oxidation.stress so effect of oxidation stabilizes
-data.oxidation.stress(end+1,:) = data.oxidation.stress(end,:);
-data.oxidation.time(end+1) = 8000;
+    % ==================== ESTIMATE Nf DUE TO OXIDATION ======================
+    % The only data with explicit temperature dependence is for flexural
+    % strength, which may be higher than the yield strength of this material.
+    % Nevertheless, for a given stress and temperature, the lifetime in hours
+    % is extracted from a table using interpolation.
 
-% Interpolate stress-time curve for given temperature
-if (maxTemp < min(data.oxidation.temp)) % temp is lower than data gives
-    % assume oxidation is negligible, arbitrarily choose:
-    Nf.oxidation = 120000;
-elseif (maxTemp > max(data.oxidation.temp)) % temp is higher than data gives
-    % assume oxidation occurs at rate given by data for 973.15 K
-    oxidationStress = data.oxidation.stress(:,3);
-    if(maxStress/1e6 < min(oxidationStress)) % assume failure will not occur
-        Nf.oxidation = 120000;
+    % The following are B-spline fits to the experimental data. Anything beyond
+    % 4000 hours is extrapolated and may be nonsense.
+    knots773 = [0 0 0 1 2 3 4 5 6 7 7 7]';
+    coefs773 = [0 0 2200 3200 4200 8000 25000 28000 28000; % 26654
+             216 216 216 216 216 194.6 73.4 73.4 73.4];
+    knots873 = [0 0 0 1 2 3 4 5 6 7 8 8 8]';
+    coefs873 = [0 0 500 1000 2000 4000 5000 8000 28000 28000;
+             216 216 216 212.8469 120.8990 73.4 73.4 73.4 73.4 73.4];
+    knots973 = [0 0 0 1 2 3 4 5 6 7 7 7]';
+    coefs973 = [0 0 500 1000 2000 4000 8000 28000 28000;
+             216 216 127.9062 79.1310 73.4 73.4 73.4 73.4 73.4];
+    % Use polymer rule of thumb to correct flexural strength to yield strength
+    coefs773(2,:) = coefs773(2,:)/1.5;
+    coefs873(2,:) = coefs873(2,:)/1.5;
+    coefs973(2,:) = coefs973(2,:)/1.5;
+
+    % figure; hold on;
+    % tPlot = linspace(0,40000,1000)';
+    % plot(tPlot,BsplineGeometryMex(tPlot,3,knots773,coefs773')/2);
+    % plot(tPlot,BsplineGeometryMex(tPlot,3,knots873,coefs873')/2);
+    % plot(tPlot,BsplineGeometryMex(tPlot,3,knots973,coefs973')/2);
+    % legend('773','873','973')
+
+    if(maxStress/1e6 >= max(coefs773(2,:)) - 1e-6) % max stress exceeded
+        Nf.oxidation(mm) = 0; % i.e. 0
+    elseif(maxStress/1e6 < min(coefs773(2,:)) + 1e-6) % assume a fatigue limit
+        Nf.oxidation(mm) = 1e9; % i.e. 1 billion hours or infinity
+    elseif(maxTemp < 273.15) 
+        Nf.oxidation(mm) = 1e9; % i.e. 1 billion hours or infinity
     else
-        [~,ia,~] = unique(oxidationStress);
-        T_oxidation = interp1(oxidationStress(ia),data.oxidation.time(ia),maxStress/1e6,'linear','extrap');
-        Nf.oxidation = T_oxidation/deltat;
+        Tm = maxTemp;
+        % If temperature range exceeded, fit data to nearest temperature
+        if(Tm > 973.15), Tm = 973.15; end
+
+        % Set upper/lower functions for interpolation
+        if(Tm <= 773.15)
+            fu = @(T) max(coefs773(2,:));
+            fl = @(T) BsplineGeometryMex(T,3,knots773,coefs773')/2;
+            Tu = 273.15; 
+            Tl = 773.15;
+            zeroFunc = @(T) maxStress/1e6 - fl(T) - (fu(T) - fl(T))*(Tm - Tl)/(Tu - Tl);
+            startGuess = 5000;
+        elseif(Tm <= 873.15)
+            fu = @(T) BsplineGeometryMex(T,3,knots773,coefs773')/2;
+            fl = @(T) BsplineGeometryMex(T,3,knots873,coefs873')/2;
+            Tu = 773.15;
+            Tl = 873.15;
+            zeroFunc = @(T) maxStress/1e6 - fl(T) - (fu(T) - fl(T))*(Tm - Tl)/(Tu - Tl);
+            startGuess = 5000;
+        elseif(Tm <= 973.15)
+            fu = @(T) BsplineGeometryMex(T,3,knots873,coefs873')/2;
+            fl = @(T) BsplineGeometryMex(T,3,knots973,coefs973')/2;
+            Tu = 873.15;
+            Tl = 973.15;
+            zeroFunc = @(T) maxStress/1e6 - fl(T) - (fu(T) - fl(T))*(Tm - Tl)/(Tu - Tl);
+            % Find sufficient start guess
+            Tstart = [5 50 100 1000 5000];
+            val = zeros(length(Tstart),1);
+            for ii = 1:length(Tstart)
+                val(ii) = zeroFunc(Tstart(ii));
+            end
+            ind = find(val > 0,1,'first');
+            startGuess = Tstart(ind);
+            %startGuess = 5000;
+        end
+
+        if(Tm <= 773.15)
+            sigmaLimit = min(coefs773(2,:)) + (max(coefs773(2,:)) - min(coefs773(2,:)))*(Tm - 773.15)/(273.15 - 773.15);
+            if(maxStress/1e6 < sigmaLimit)
+                Nf.oxidation(mm) = 1e9; % i.e. 1 billion hours or infinity
+            else
+                Nf.oxidation(mm) = fzero(zeroFunc,startGuess);
+            end
+        else
+
+            Nf.oxidation(mm) = fzero(zeroFunc,startGuess);
+            if(Nf.oxidation(mm) < 0 || Nf.oxidation(mm) > 1e9)
+                fprintf('Nf.oxidation < 0\n');
+                fprintf('Max stress: %f\n',maxStress);
+                fprintf('Max temp: %f\n',maxTemp);
+                Nf.oxidation(mm) = 0;
+            end
+        end
+
     end
-else % interpolate from data
-    oxidationStress = interp1(data.oxidation.temp,data.oxidation.stress',maxTemp,'linear','extrap');
-    if(maxStress/1e6 < min(oxidationStress)) % assume failure will not occur
-        Nf.oxidation = 120000;
+
+    % ====================== ESTIMATE Nf DUE TO CREEP ========================
+    % The data for creep is given only for a temperature of 566 degC. 
+
+    data.creep.stressRoomTemp = [55, 55];
+    data.creep.strainRateRoomTemp = [1.5e-9, 1.1e-9];
+    data.creep.stress = [69, 83, 96]; % MPa
+    data.creep.strainRate = [1.5e-9, 9.3e-10, 3.9e-9]; % s^-1
+    data.creep.life = [133, 76, 17.5]; % hr
+    %loglog(data.creep.stress,data.creep.strainRate);
+    %coefs = polyfit(log(data.creep.stress),log(data.creep.strainRate),1);
+    slopeCreep = 2.65; % obtained from linear fit of above data (slope on log-log plot)
+    interceptCreep = -31.8; % obtained from " "
+
+    % Assumed value for activation energy for creep
+    creepActivationEnergy = 50e3; % J/mol
+    coefCreep = exp(interceptCreep + creepActivationEnergy/8.3144598/(566+273.15));
+
+    creepRate = coefCreep*(maxStress/1e6)^slopeCreep*exp(-creepActivationEnergy/8.3144598/maxTemp);
+    %fprintf('Creep rate: %e\n',creepRate);
+    %if(maxStress/1e6 > 76.17) % estimate creep using linear fit
+    %    creepRate = exp(slopeCreep*log(maxStress/1e6) + interceptCreep);
+    %end%else
+    %    creepRate = 1.5e-9; % s^-1
+    %end
+
+    % Chawla CMC textbook assumes failure at 1% strain; experimental data shows
+    % failure occuring between 0.1% and 0.5% strain
+    creepFailureStrain = 0.003; % assume failure occurs at 0.3%
+    T_creep = creepFailureStrain/creepRate/3600; % hr
+    Nf.creep(mm) = T_creep/deltat;
+
+    % ========================= ESTIMATE TOTAL Nf ============================
+    if(Nf.fatigue(mm) == 0 || Nf.oxidation(mm) == 0 || Nf.creep(mm) == 0)
+        Nf.total(mm) = 0;
     else
-        [~,ia,~] = unique(oxidationStress);
-        T_oxidation = interp1(oxidationStress(ia),data.oxidation.time(ia),maxStress/1e6,'linear','extrap');
-        Nf.oxidation = T_oxidation/deltat;
+        Nf.total(mm) = 1/(1/Nf.fatigue(mm) + 1/Nf.oxidation(mm) + 1/Nf.creep(mm));
     end
-    %plot(data.oxidation.time,oxidationStress);
+
+    % =========================== PRINT RESULTS ==============================
+    % fprintf('Nf.fatigue: %e\n',Nf.fatigue);
+    % fprintf('Nf.oxidation: %e\n',Nf.oxidation);
+    % fprintf('Nf.creep: %e\n',Nf.creep);
+    % fprintf('Total Nf: %e\n',Nf.total);
+    
 end
 
-% ====================== ESTIMATE Nf DUE TO CREEP ========================
-% The data for creep is given only for a temperature of 566 degC. 
-
-data.creep.stress = [69, 83, 96]; % MPa
-data.creep.strainRate = [1.5e-9, 9.3e-10, 3.9e-9]; % s^-1
-data.creep.life = [133, 76, 17.5]; % hr
-%loglog(data.creep.stress,data.creep.strainRate);
-%coefs = polyfit(log(data.creep.stress),log(data.creep.strainRate),1);
-slopeCreep = 2.65; % obtained from linear fit of above data (slope on log-log plot)
-interceptCreep = -31.8; % obtained from " "
-
-if(maxStress/1e6 > 76.17) % estimate creep using linear fit
-    creepRate = exp(slopeCreep*log(maxStress/1e6) + interceptCreep);
-else
-    creepRate = 1.5e-9; % s^-1
 end
-
-creepFailureStrain = 0.01; % assume failure occurs at 1% (Chawla CMC textbook)
-T_creep = creepFailureStrain/creepRate/3600; % hr
-Nf.creep = T_creep/deltat;
-
-% ========================= ESTIMATE TOTAL Nf ============================
-Nf.total = 1/(1/Nf.fatigue + 1/Nf.oxidation + 1/Nf.creep);
-
-% =========================== PRINT RESULTS ==============================
-% fprintf('Nf.fatigue: %e\n',Nf.fatigue);
-% fprintf('Nf.oxidation: %e\n',Nf.oxidation);
-% fprintf('Nf.creep: %e\n',Nf.creep);
-% fprintf('Total Nf: %e\n',Nf.total);
-
-
 
