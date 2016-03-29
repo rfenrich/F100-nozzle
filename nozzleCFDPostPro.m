@@ -111,7 +111,7 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	P = dat(:,iPres);
 	Pq = griddata(x,y,P,xq,yq);
 	
-	nozzle.hoopStress = prod([Pq(Nj,:) ;D(xq(1,:))';1./(2*t(xq(1,:))')])
+	nozzle.hoopStress = prod([Pq(Nj,:) ;D(xq(1,:)')';1./(2*t(xq(1,:)')')]);
 
 	% --- Compute
 	%WriteGMFStruc ('presin.mesh', xq, yq, Pq )

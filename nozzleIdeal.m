@@ -198,8 +198,11 @@ nozzle.netThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U - 
 nozzle.grossThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 
 % ========================== CALC STRESSES ===============================
+% Stresses are very approximate. Thermal hoop stress is zero since ideal
+% nozzle has no heat flux through the wall.
 
 nozzle.hoopStress = flow.P.*D(xPosition)./(2*t(xPosition));
+nozzle.maxStress = nozzle.hoopStress;
 
 % ==================== CALC CYCLES TO FAILURE NF =========================
 

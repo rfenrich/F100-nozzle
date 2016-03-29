@@ -9,7 +9,7 @@ function [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error )
 % Returns M, density, pressure P, temperature T, stagnation 
 % temp. Tstag, stagnation pressure Pstag, velocity U, Re, internal heat
 % transfer coefficient hf, friction coefficient Cf, interior wall temp. Tw,
-% exterior wall temp. Text, and hoopStress along length of nozzle.
+% exterior wall temp. Text, and approximate stress along length of nozzle.
 %
 % INPUTS:
 % fluid = structure with fields: gam (ratio of specific heats) and R
@@ -339,6 +339,7 @@ nozzle.netThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U - 
 nozzle.grossThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 
 % ========================== CALC STRESSES ===============================
+% Stresses are very approximate.
 
 nozzle.hoopStress = flow.P.*D(xPosition)./(2*t(xPosition));
 nozzle.thermalHoopStress = 0.5*(nozzle.Tw-nozzle.Text)*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
