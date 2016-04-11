@@ -14,7 +14,7 @@ fidelity = 'med'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
 % ============= Options for mid-fidelity (used only if fidelity=='med')
 
 nozzle.meshSize  = 'coarse'; % 'coarse', 'medium', or 'fine'
-nozzle.governing = 'euler'; % 'euler' or 'rans'
+nozzle.governing = 'rans'; % 'euler' or 'rans'
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------
 nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
@@ -64,7 +64,7 @@ error.solver.M2absolute = 1e-10;
 error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
 
 % ---------------------- SET NOZZLE GEOMETRY -----------------------------
-nozzle.geometry.shape = 'B-spline-mex'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
+nozzle.geometry.shape = 'B-spline'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
 if(strcmp(nozzle.geometry.shape,'spline')) 
     % To parameterize using a cubic spline, the following must be provided:
     % spline.seed = either a shape already defined in the nozzleGeometry.m 

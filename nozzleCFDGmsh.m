@@ -13,15 +13,24 @@ function [  ] = nozzleCFDGmsh( nozzle, xwall, ywall )
 	
 	CrdBox=[];
 		
+	%CrdBox(1,1) = 0;       CrdBox(1,2) = 0;
+	%CrdBox(2,1) = 0.67;    CrdBox(2,2) = 0;
+	%CrdBox(3,1) = 20.1;    CrdBox(3,2) = 0;
+	%CrdBox(4,1) = 20.1;    CrdBox(4,2) = 6.03;
+	%CrdBox(5,1) = -0.67;   CrdBox(5,2) = 3.015;
+	%CrdBox(6,1) = -0.67;   CrdBox(6,2) = 0.4244;
+	%CrdBox(7,1) = 0.1548;  CrdBox(7,2) = 0.4244;
+	%CrdBox(8,1) = 0.67;    CrdBox(8,2) =  0.3151;
+	
+	% --- Updated domain : shorter and higher (to prevent unwanted physics) computational domain
 	CrdBox(1,1) = 0;       CrdBox(1,2) = 0;
 	CrdBox(2,1) = 0.67;    CrdBox(2,2) = 0;
-	CrdBox(3,1) = 20.1;    CrdBox(3,2) = 0;
-	CrdBox(4,1) = 20.1;    CrdBox(4,2) = 6.03;
-	CrdBox(5,1) = -0.67;   CrdBox(5,2) = 3.015;
+	CrdBox(3,1) = 7;       CrdBox(3,2) = 0;
+	CrdBox(4,1) = 7;       CrdBox(4,2) = 10;
+	CrdBox(5,1) = -0.67;   CrdBox(5,2) = 10;
 	CrdBox(6,1) = -0.67;   CrdBox(6,2) = 0.4244;
 	CrdBox(7,1) = 0.1548;  CrdBox(7,2) = 0.4244;
 	CrdBox(8,1) = 0.67;    CrdBox(8,2) =  0.3151;
-	
 	
 	%--- Add points
 	

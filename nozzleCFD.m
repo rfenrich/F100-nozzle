@@ -78,7 +78,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	if ( strcmp(nozzle.meshSize,'coarse') ) 
 		% Mesh size? -> Cf NozzleCFDGmsh()	
 		nozzle.sizWal = 0.008;  % edge size around the nozzle wall
-		nozzle.sizFar = 0.4;    % max size for the farfield region
+		nozzle.sizFar = 1;    % max size for the farfield region
 		nozzle.sizSym = 0.08;   % max size for the symmetry border
 		nozzle.yplus  = 2;      % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
 	elseif ( strcmp(nozzle.meshSize,'medium') ) 
@@ -133,6 +133,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	% ======================= RUN CFD SIMULATION (SU2) ===============
 	% Write data file (.cfg) for SU2
 	
+	
 	writeSU2DataFile( nozzle );
 	
 	if(exist('history.dat', 'file') == 2)
@@ -143,15 +144,15 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	  delete('./restart_flow.dat');
 	end
 	
-	if ( strcmp(nozzle.governing,'rans') )
-		tmp = input('  ## WARNING ! You might want to use an euler flow computation for now.\n Note: a viscous mesh was generated.\n Do you want to continue? (y/n) \n', 's');
-		if ( ~strcmp(tmp,'y') )
-			fprintf('STOP\n');
-			return;
-		else
-			fprintf('-> Continue\n');
-		end
-	end
+	%if ( strcmp(nozzle.governing,'rans') )
+	%	tmp = input('  ## WARNING ! You might want to use an euler flow computation for now.\n Note: a viscous mesh was generated.\n Do you want to continue? (y/n) \n', 's');
+	%	if ( ~strcmp(tmp,'y') )
+	%		fprintf('STOP\n');
+	%		return;
+	%	else
+	%		fprintf('-> Continue\n');
+	%	end
+	%end
 	
 	disp('	-- Running SU2 (Cf SU2.job )')
 	!SU2_CFD axinoz.cfg >SU2.job
