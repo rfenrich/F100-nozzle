@@ -13,6 +13,8 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 
 	thrust = 0;
     mdot = 0; % mass flow rate
+    PstagExitAverage = 0;
+    TstagExitAverage = 0;
 	
 	ix     = -1;
 	iMach  = -1;
@@ -74,7 +76,8 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	% ---    Extract solution along line(s) of interest
 	% --------------------------------------------------------
 	
-	idx = find( dat(:,ix) == xextract & dat(:,iy) < 0.2919 );
+	%idx = find( dat(:,ix) == xextract & dat(:,iy) < 0.2919 );
+    idx = find( dat(:,ix) == xextract & dat(:,iy) < nozzle.geometry.D(end)/2 + 1e-6 );
 	DatLin = dat(idx,:);
 	DatLin = sortrows(DatLin,iy);
 	
@@ -86,16 +89,23 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	
 	avgDat=zeros(1,size(DatLin,2));
   
+    yTotal = max(DatLin(:,iy));
   for i=2:NbvLin
   	dy = DatLin(i,iy)-DatLin(i-1,iy);
   	avgDat(1,:) = avgDat(1,:)+dy*DatLin(i,:);
-		
-		rhoU = DatLin(i,iCons2);
+    
+        rhoU = DatLin(i,iCons2);
 		rho  = DatLin(i,iCons1);
 		U    = DatLin(i,iCons2)/DatLin(i,iCons1);
 		U0   = freestream.U;
 		P    = DatLin(i,iPres);
 		P0   = freestream.P;
+        M    = DatLin(i,iMach);
+        T    = DatLin(i,iTem);
+           
+        % --- Compute stagnation properties at exit
+        PstagExitAverage = PstagExitAverage + (dy/yTotal)*P*(1 + (fluid.gam-1)*M^2/2)^(fluid.gam/(fluid.gam-1));
+        TstagExitAverage = TstagExitAverage + (dy/yTotal)*T*(1 + (fluid.gam-1)*M^2/2); 
 		
 		% --- Compute thrust
 		% T = 2PI * Int_{0}^{R} (rho U ( U - U0) + P - Po ) r dr
@@ -162,8 +172,8 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	nozzle.exit.T = avgDat(1,iTem);
 	nozzle.exit.U = (avgDat(1,iCons2)+avgDat(1,iCons3))/avgDat(1,iCons1);
 	nozzle.exit.P = avgDat(1,iPres);
-	nozzle.exit.Pstag = nozzle.exit.P*(1 + (fluid.gam-1)*nozzle.exit.M^2/2)^(fluid.gam/(fluid.gam-1));
-    nozzle.exit.Tstag = nozzle.exit.T*(1 + (fluid.gam-1)*nozzle.exit.M^2/2);    
+	nozzle.exit.Pstag = PstagExitAverage;
+    nozzle.exit.Tstag = TstagExitAverage;    
     
     nozzle.PstagRatio = nozzle.exit.Pstag/nozzle.boundaryCdt.PtIn;
     nozzle.TstagRatio = nozzle.exit.Tstag/nozzle.boundaryCdt.TtIn;
