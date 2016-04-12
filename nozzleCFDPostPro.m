@@ -183,13 +183,22 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
     nozzle.massFlowRate = mdot;
     
     % --- Calculate stresses
+    % Stresses calculated assuming cylinder, nozzle length not constrained in 
+    % thermal expansion
 	%nozzle.hoopStress = prod([Pq(Nj,:) ;D(xq(1,:)')';1./(2*t(xq(1,:)')')]);
-    nozzle.hoopStress = Pq(Nj,:)'.*nozzle.geometry.D./(2*nozzle.wall.t);
-    nozzle.thermalHoopStress = 0.5*(nozzle.Tw-nozzle.Text)*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
-    nozzle.maxStress = nozzle.hoopStress' + nozzle.thermalHoopStress;    
+    nozzle.stress.hoop = Pq(Nj,:)'.*nozzle.geometry.D./(2*nozzle.wall.t);
+    
+    % Thermal stresses calculated assuming steady-state, give max tensile stress
+    ri = nozzle.geometry.D/2; % inner radius
+    ro = nozzle.geometry.D/2 + nozzle.wall.t; % outer radius
+    nozzle.stress.thermal.radial = nozzle.wall.E*nozzle.wall.coeffThermalExpansion*(nozzle.Tw-nozzle.Text)/(2*(1-nozzle.wall.poissonRatio)).*(1./log(ro./ri)).*(1 - 2*ri.^2./(ro.^2 - ri.^2).*log(ro./ri));
+    nozzle.stress.thermal.tangential = nozzle.stress.thermal.radial;
+
+    nozzle.stress.maxPrincipal = nozzle.stress.hoop + nozzle.stress.thermal.tangential;
+    nozzle.stress.principal = [nozzle.stress.maxPrincipal, nozzle.stress.thermal.radial, zeros(length(xPosition),1)]; 
     
     % --- Calculate cycles to failure Nf
-    nozzle.Nf = estimateNf(nozzle.Tw,nozzle.maxStress,1);
+    nozzle.Nf = estimateNf(nozzle.Tw,nozzle.stress.maxPrincipal,1);
 	
     % --- Calc nozzle material volume
     % Volume calculation only works for spline parameterized nozzle geometry
