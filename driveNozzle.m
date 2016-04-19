@@ -8,12 +8,12 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 2; % mission number for which certain input parameters are defined below
-fidelity = 'med'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
+mission = 1; % mission number for which certain input parameters are defined below
+fidelity = 'low'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
 
 % ============= Options for mid-fidelity (used only if fidelity=='med')
 
-nozzle.meshSize  = 'coarse'; % 'coarse', 'medium', or 'fine'
+nozzle.meshSize  = 'fine'; % 'coarse', 'medium', or 'fine'
 nozzle.governing = 'euler'; % 'euler' or 'rans'
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------

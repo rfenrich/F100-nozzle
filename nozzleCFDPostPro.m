@@ -76,8 +76,7 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	% ---    Extract solution along line(s) of interest
 	% --------------------------------------------------------
 	
-	%idx = find( dat(:,ix) == xextract & dat(:,iy) < 0.2919 );
-    idx = find( dat(:,ix) == xextract & dat(:,iy) < nozzle.geometry.D(end)/2 + 1e-6 );
+    idx = find( dat(:,ix) == xextract & dat(:,iy) < D(nozzle.geometry.length)/2 + 1e-6 );
 	DatLin = dat(idx,:);
 	DatLin = sortrows(DatLin,iy);
 	
@@ -115,8 +114,6 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 		
 	hei = DatLin(NbvLin,iy)-DatLin(1,iy);
 	avgDat(1,:) = avgDat(1,:)/hei;
-	
-	% --- Compute hoop stress
 	
     % --- Extract pressure, temp, density, and velocity onto a grid
 	P = dat(:,iPres);
@@ -157,15 +154,34 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
     dynamicViscosity = @(T) 1.716e-5*(T/273.15).^1.5*(273.15 + 110.4)./(T + 110.4); % kg/m*s
     nozzle.flow.Re = rhoq.*Uq.*repmat(nozzle.geometry.D,1,Nj)'./dynamicViscosity(nozzle.flow.T);
     
-    % THE FOLLOWING 3 QUANTITIES NEED ESTIMATION
-    nozzle.flow.hf = 0;
-    nozzle.wallRecoveryFactor = 0;
-    nozzle.flow.Cf = 0;
+    % ========================= THERMAL PROPERTIES ===========================
+    % Uncomment the following if you want Pr, conductivity k, and Cp to change
+    % with temperature:
+    air.temp = [175 200 225 250 275 300 325 350 375 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1500];
+    air.Pr = [0.744 0.736 0.728 0.72 0.713 0.707 0.701 0.697 0.692 0.688 0.684 0.68 0.68 0.68 0.682 0.684 0.687 0.69 0.693 0.696 0.699 0.702 0.704 0.707 0.709 0.711 0.713 0.715 0.717 0.719 0.722];
+    air.k = 0.01*[1.593 1.809 2.02 2.227 2.428 2.624 2.816 3.003 3.186 3.365 3.71 4.041 4.357 4.661 4.954 5.236 5.509 5.774 6.03 6.276 6.52 6.754 6.985 7.209 7.427 7.64 7.849 8.054 8.253 8.45 8.831];
+    air.Cp = [1002.3 1002.5 1002.7 1003.1 1003.8 1004.9 1006.3 1008.2 1010.6 1013.5 1020.6 1029.5 1039.8 1051.1 1062.9 1075.0 1087.0 1098.7 1110.1 1120.9 1131.3 1141.1 1150.2 1158.9 1167.0 1174.6 1181.7 1188.4 1194.6 1200.5 1211.2];
+    Pr = @(T) interpLinear(air.temp,air.Pr,T); % Prandtl number of air
+    kf = @(T) interpLinear(air.temp,air.k,T); % thermal conductivity of air
+    Cp = @(T) interpLinear(air.temp,air.Cp,T); % specific heat of air
+
+    % Assume average values for Pr, thermal conductivity k, and Cp:
+    %Pr = @(T) 0.7;
+    %kf = @(T) 0.037;
+    %Cp = @(T) 1035;
+
+    % Estimate Cf
+    TPrimeRatio = 1 + 0.035*nozzle.flow.M(Nj,:).^2 + 0.45*(nozzle.flow.Tstag(Nj,:)./nozzle.flow.T(Nj,:) -1);
+    RePrimeRatio = 1./(TPrimeRatio.*(TPrimeRatio).^1.5.*(1 + 110.4./nozzle.flow.T(Nj,:))./(TPrimeRatio + 110.4./nozzle.flow.T(Nj,:)));
+    CfIncomp = 0.074./nozzle.flow.Re(Nj,:).^0.2;
+    nozzle.flow.Cf = CfIncomp./TPrimeRatio./RePrimeRatio.^0.2;
     
-    % --- Extract wall data
-    nozzle.Tw = nozzle.flow.T(Nj,:);
-    % THE FOLLOWING QUANTITY NEEDS ESTIMATION, EXTERNAL WALL TEMP
-    nozzle.Text = nozzle.Tw; % temporary fix
+    % Estimate wall data (no iterations; this estimate is conservative)
+    nozzle.flow.hf = 0.5*nozzle.flow.density(Nj,:)'.*nozzle.flow.U(Nj,:)'.*Cp(nozzle.flow.T(Nj,:)).*Pr(nozzle.flow.T(Nj,:)).^(2/3).*nozzle.flow.Cf';
+    Rtotal = 1./nozzle.flow.hf + nozzle.wall.t./nozzle.wall.k + 1./nozzle.hInf; % total thermal resistance
+    Qw = (freestream.T - nozzle.flow.Tstag(Nj,:)')./Rtotal; % heat passing through wall
+    nozzle.wall.Tinside = nozzle.flow.Tstag(Nj,:)' + Qw./nozzle.flow.hf; % nozzle interior wall temp.
+    nozzle.wall.Toutside = freestream.T - Qw./nozzle.hInf; % nozzle exterior wall temp.
 
     % --- Record nozzle exit values
 	nozzle.exit.M = avgDat(1,iMach);
@@ -185,20 +201,19 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
     % --- Calculate stresses
     % Stresses calculated assuming cylinder, nozzle length not constrained in 
     % thermal expansion
-	%nozzle.hoopStress = prod([Pq(Nj,:) ;D(xq(1,:)')';1./(2*t(xq(1,:)')')]);
     nozzle.stress.hoop = Pq(Nj,:)'.*nozzle.geometry.D./(2*nozzle.wall.t);
     
     % Thermal stresses calculated assuming steady-state, give max tensile stress
     ri = nozzle.geometry.D/2; % inner radius
     ro = nozzle.geometry.D/2 + nozzle.wall.t; % outer radius
-    nozzle.stress.thermal.radial = nozzle.wall.E*nozzle.wall.coeffThermalExpansion*(nozzle.Tw-nozzle.Text)/(2*(1-nozzle.wall.poissonRatio)).*(1./log(ro./ri)).*(1 - 2*ri.^2./(ro.^2 - ri.^2).*log(ro./ri));
+    nozzle.stress.thermal.radial = nozzle.wall.E*nozzle.wall.coeffThermalExpansion*(nozzle.wall.Tinside-nozzle.wall.Toutside)/(2*(1-nozzle.wall.poissonRatio)).*(1./log(ro./ri)).*(1 - 2*ri.^2./(ro.^2 - ri.^2).*log(ro./ri));
     nozzle.stress.thermal.tangential = nozzle.stress.thermal.radial;
 
     nozzle.stress.maxPrincipal = nozzle.stress.hoop + nozzle.stress.thermal.tangential;
-    nozzle.stress.principal = [nozzle.stress.maxPrincipal, nozzle.stress.thermal.radial, zeros(length(xPosition),1)]; 
+    nozzle.stress.principal = [nozzle.stress.maxPrincipal, nozzle.stress.thermal.radial, zeros(length(nozzle.xPosition),1)]; 
     
     % --- Calculate cycles to failure Nf
-    nozzle.Nf = estimateNf(nozzle.Tw,nozzle.stress.maxPrincipal,1);
+    nozzle.Nf = estimateNf(nozzle.wall.Tinside,nozzle.stress.maxPrincipal,1);
 	
     % --- Calc nozzle material volume
     % Volume calculation only works for spline parameterized nozzle geometry

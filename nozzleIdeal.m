@@ -69,6 +69,7 @@ exit.critical.PtRatioSupersonic = (1 + (gam-1)*exit.critical.Msupersonic^2/2)^(g
 
 MbehindShock = sqrt((1 + (gam-1)*exit.critical.Msupersonic^2/2)/(gam*exit.critical.Msupersonic^2 - (gam-1)/2));
 exit.normalShock.PtRatio = (nozzle.exit.A/nozzle.throat.A)*((gam+1)/2)^((gam+1)/(2*(gam-1)))*MbehindShock*sqrt(1 + (gam-1)*MbehindShock^2/2);
+shock.M = 0;
 
 deltaPtRatio = 0.05; % a tolerance for deciding whether fully expanded flow occurs
 
@@ -86,8 +87,6 @@ elseif (pressureRatio < exit.normalShock.PtRatio)
     exit.M = fsolve( @(x) ((gam+1)/2)^((gam+1)/(2*(gam-1)))*x*sqrt(1 + (gam-1)*x^2/2) - pressureRatio*nozzle.throat.A/nozzle.exit.A, 0.5, options);
     nozzle.PstagRatio = nozzle.throat.A/nozzle.exit.A/AreaMachFunc(gam,exit.M);
     shock.M = fsolve( @(x) (((gam+1)*x^2/2)/(1 + (gam-1)*x^2/2))^(gam/(gam-1))*(((gam+1)/2)/(gam*x^2 - (gam-1)/2))^(1/(gam-1)) - nozzle.PstagRatio,2,options);
-    shock.A = nozzle.throat.A/AreaMachFunc(gam,shock.M);
-    shock.x = fsolve( @(x) A(x) - shock.A, (nozzle.geometry.length + nozzle.geometry.xThroat)/2, options);
     shockInNozzle = true;
 elseif (pressureRatio < exit.critical.PtRatioSupersonic - deltaPtRatio)
     %fprintf('ideal: Overexpanded flow\n');
@@ -111,6 +110,7 @@ dM2dxPrior = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.geometry.xTh
 % ODE solver options
 options.RelTol = error.solver.M2relative;
 options.AbsTol = error.solver.M2absolute;
+options.Events = @eventsFcn;
 % Solve using 4th-order Runge-Kutta method
 if (strcmp(nozzle.status,'subsonic')) % subsonic flow throughout nozzle
     dM2dxSubsonic = @(x, M2) -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(nozzle.geometry.length-x)./A(nozzle.geometry.length-x));
@@ -124,27 +124,26 @@ elseif (shockInNozzle ~= true) % supersonic flow, no shock in nozzle
     LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
     
     % Solve using 4th-order Runge-Kutta method
-    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 nozzle.geometry.length-nozzle.geometry.xThroat],UpperM,options);
-    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.geometry.xThroat],LowerM,options);
+    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 nozzle.geometry.length-nozzle.geometry.xThroat],UpperM^2,options);
+    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.geometry.xThroat],LowerM^2,options);
     
     % Combine both parts of problem
     M2 = [flipud(M2Prior); M2Post]; % contains Mach^2
     xPosition = [-flipud(xPositionPrior)+nozzle.geometry.xThroat; xPositionPost + nozzle.geometry.xThroat];
 else % sub and supersonic flow, shock in nozzle
-    dM2dxPostShock = @(x, M2) (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx(x+shock.x)./A(x+shock.x));
     
     UpperM = 1.001; % start integration at this Mach number for aft portion of nozzle
     LowerM = 0.999; % start integration at this Mach number for fore portion of nozzle
     
-    [xPositionPost,M2Post] = ode45(dM2dxPost,[0 shock.x - nozzle.geometry.xThroat],UpperM,options);
+    [xPositionPost,M2Post,TE,YE,IE] = ode45(dM2dxPost,[0 nozzle.geometry.length-nozzle.geometry.xThroat],UpperM^2,options);
     MbehindShock = sqrt((1 + (gam-1)*shock.M^2/2)/(gam*shock.M^2 - (gam-1)/2));
     shock.PtRatio = nozzle.PstagRatio;
-    [xPositionPostShock,M2PostShock] = ode45(dM2dxPostShock,[1e-8 nozzle.geometry.length-shock.x],MbehindShock^2,options);
-    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.geometry.xThroat],LowerM,options);
+    [xPositionPostShock,M2PostShock] = ode45(dM2dxPost,[TE nozzle.geometry.length-nozzle.geometry.xThroat],MbehindShock^2,options);
+    [xPositionPrior,M2Prior] = ode45(dM2dxPrior,[0 nozzle.geometry.xThroat],LowerM^2,options);
     
     % Combine both parts of problem
     M2 = [flipud(M2Prior); M2Post; M2PostShock]; % contains Mach^2
-    xPosition = [-flipud(xPositionPrior)+nozzle.geometry.xThroat; xPositionPost + nozzle.geometry.xThroat; xPositionPostShock + shock.x];
+    xPosition = [-flipud(xPositionPrior)+nozzle.geometry.xThroat; xPositionPost + nozzle.geometry.xThroat; xPositionPostShock + nozzle.geometry.xThroat];
 end
 
 % Throw exception if M^2 is negative for whatever reason
@@ -225,5 +224,15 @@ else % Approximate volume using trapezoidal integration
     volumeIntegrand = pi*D(xVolume).*t(xVolume) + pi*t(xVolume).^2;
     nozzle.geometry.volume = (xVolume(2)-xVolume(1))*trapz(volumeIntegrand);
 end
+
+function [ value, isTerminal, direction ] = eventsFcn(x, M2)
+
+    % Event function 1: Mach shock number reached
+    value(1) = sqrt(M2) - shock.M;
+    isTerminal(1) = 1;
+    direction(1) = 1; % only flag an event if M2 is increasing
+
+end
+
 
 end
