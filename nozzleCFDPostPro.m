@@ -77,7 +77,7 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 	% --------------------------------------------------------
 	
 	%idx = find( dat(:,ix) == xextract & dat(:,iy) < 0.2919 );
-    idx = find( dat(:,ix) == xextract & dat(:,iy) < nozzle.geometry.D(end)/2 + 1e-6 );
+  idx = find( dat(:,ix) == xextract & dat(:,iy) < 0.5*nozzle.geometry.DExit + 1e-6 );
 	DatLin = dat(idx,:);
 	DatLin = sortrows(DatLin,iy);
 	

@@ -54,6 +54,11 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	%--- Wall thickness
 	t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall);
 	
+	
+
+	nozzle.geometry.DExit = D(nozzle.geometry.length);
+
+	
 	% ========================== CFD : boundary conditions
 	
 	nozzle.boundaryCdt.Mref  = freestream.M;
@@ -78,7 +83,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	if ( strcmp(nozzle.meshSize,'coarse') ) 
 		% Mesh size? -> Cf NozzleCFDGmsh()	
 		nozzle.sizWal = 0.008;  % edge size around the nozzle wall
-		nozzle.sizFar = 1;    % max size for the farfield region
+		nozzle.sizFar = 2;    % max size for the farfield region
 		nozzle.sizSym = 0.08;   % max size for the symmetry border
 		nozzle.yplus  = 2;      % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
 	elseif ( strcmp(nozzle.meshSize,'medium') ) 
@@ -133,7 +138,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	% ======================= RUN CFD SIMULATION (SU2) ===============
 	% Write data file (.cfg) for SU2
 	
-	
+	nozzle.CFDSafeMode = 0;
 	writeSU2DataFile( nozzle );
 	
 	if(exist('history.dat', 'file') == 2)
@@ -157,9 +162,27 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	disp('	-- Running SU2 (Cf SU2.job )')
 	!SU2_CFD axinoz.cfg >SU2.job
 	
-	if(exist('restart_flow.dat', 'file') ~= 2)
-	  disp('  ## ERROR nozzleCFD : SU2 simulation failed.')
-	  return
+	% --- Restart simulation if not converged
+	
+	% Check the final residual of the simulation.
+	% If converged, continue.
+	% If diverged, restart the sim using a safer (but slower) set of input parameters.
+	
+	if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+		
+		if ( strcmp(nozzle.governing,'rans') )
+			% No safe mode for RANS yet (input parameters are already safe for RANS)
+			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+		end
+		
+		% The CFD solution is not converged : restart with the safe mode on
+		nozzle.CFDSafeMode = 1;
+		writeSU2DataFile( nozzle );
+		disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
+		!SU2_CFD axinoz.cfg >SU2.job
+		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+		end
 	end
 	
 	% ======================= POST PROCESSING ===============

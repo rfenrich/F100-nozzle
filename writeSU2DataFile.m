@@ -8,14 +8,18 @@ function [] = writeSU2DataFile ( nozzle )
 
 	rans = strcmp(nozzle.governing,'rans');
 	
+	safeMode =  nozzle.CFDSafeMode;
+	
 	if ( rans ) 
 		% --- We use multigrid for RANS (not for Euler)
 		%      -> fewer iterations required
-		nozzle.NbrIte = 250;
-	else
-		nozzle.NbrIte = 500;
+		nozzle.NbrIte = 200;
+	else if ( safeMode )
+		nozzle.NbrIte = 600;
+	else 
+		nozzle.NbrIte = 300;
 	end
-  
+  nozzle.NbrIte = 10;
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
   fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
   fprintf('		Freestream Static Pressure:    %f Pa\n',nozzle.boundaryCdt.PsRef);
@@ -224,9 +228,11 @@ function [] = writeSU2DataFile ( nozzle )
 		fprintf(DatOut,'CONV_NUM_METHOD_TURB= SCALAR_UPWIND                                                \n');                                                                               
 		fprintf(DatOut,'% Spatial numerical order integration (1ST_ORDER, 2ND_ORDER, 2ND_ORDER_LIMITER)    \n');
 		fprintf(DatOut,'SPATIAL_ORDER_TURB= 1ST_ORDER                                                      \n');
-		fprintf(DatOut,'TIME_DISCRE_TURB= EULER_IMPLICIT                                                   \n');
+		fprintf(DatOut,'TIME_DISCRE_TURB= EULER_IMPLICIT                                                   \n');	
+	end
+	
+	if ( rans || safeMode ) 
 		fprintf(DatOut,'RELAXATION_FACTOR_FLOW= 0.1  \n');
-		
 	end
 	
   fprintf(DatOut,'%% --------------------------- CONVERGENCE PARAMETERS --------------------------&  \n');
@@ -298,7 +304,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' SURFACE_ADJ_FILENAME= surface_adjoint                                             \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Writing solution frequency                                                      \n');
-  fprintf(DatOut,' WRT_SOL_FREQ= 100                                                                 \n');
+  fprintf(DatOut,' WRT_SOL_FREQ= 1000                                                                 \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Writing convergence history frequency                                           \n');
   fprintf(DatOut,' WRT_CON_FREQ= 1                                                                   \n');

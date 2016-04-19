@@ -14,7 +14,7 @@ fidelity = 'med'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
 % ============= Options for mid-fidelity (used only if fidelity=='med')
 
 nozzle.meshSize  = 'coarse'; % 'coarse', 'medium', or 'fine'
-nozzle.governing = 'rans'; % 'euler' or 'rans'
+nozzle.governing = 'euler'; % 'euler' or 'rans'
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------
 nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
