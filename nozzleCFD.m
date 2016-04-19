@@ -43,9 +43,6 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	nozzle.geometry.xApparentThroat = nozzle.geometry.xThroat; % initialize apparent throat location
 	
-	% Calculate pressure ratio which determines state of nozzle:
-	pressureRatio = inlet.Pstag/freestream.P;
-	
 	%% ======================= Get Nozzle Parameterization ==============
 	
 	%--- Inner wall
@@ -62,10 +59,10 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	% ========================== CFD : boundary conditions
 	
 	nozzle.boundaryCdt.Mref  = freestream.M;
-  nozzle.boundaryCdt.PsRef = freestream.P;
-  nozzle.boundaryCdt.TsRef = freestream.T;
-  nozzle.boundaryCdt.TtIn  = nozzle.inlet.Tstag;
-  nozzle.boundaryCdt.PtIn  = nozzle.inlet.Pstag;
+    nozzle.boundaryCdt.PsRef = freestream.P;
+    nozzle.boundaryCdt.TsRef = freestream.T;
+    nozzle.boundaryCdt.TtIn  = nozzle.inlet.Tstag;
+    nozzle.boundaryCdt.PtIn  = nozzle.inlet.Pstag;
 	nozzle.boundaryCdt.Uref  = freestream.U;
 	nozzle.boundaryCdt.MuRef = dynamicViscosity(freestream.T);
 
@@ -191,17 +188,6 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	% Extract averaged solution values at the nozzle's exit
 	nozzle = nozzleCFDPostPro(meshSU2, SolSU2, nozzle, fluid, freestream);
-	massFlowRate = @(Pstag,Area,Tstag,M) (gam/((gam+1)/2)^((gam+1)/(2*(gam-1))))*Pstag*Area*AreaMachFunc(gam,M)/sqrt(gam*R*Tstag);
-	%nozzle.massFlowRate = massFlowRate(nozzle.inlet.Pstag,nozzle.inlet.A,nozzle.inlet.Tstag,nozzle.flow.M(1));
-	%nozzle.approxThrust = nozzle.massFlowRate*(nozzle.exit.U - freestream.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
-	%fprintf('  CFD thrust = %f\n', nozzle.approxThrust);
-
-	
-	
-	% ====================== COMPUTE VOLUME
-	xVolume = linspace(0,nozzle.geometry.length,500)';
-  volumeIntegrand = pi*D(xVolume).*t(xVolume) + pi*t(xVolume).^2;
-  nozzle.geometry.volume = (xVolume(2)-xVolume(1))*trapz(volumeIntegrand);
 	
 	nozzle.success = 1;
 

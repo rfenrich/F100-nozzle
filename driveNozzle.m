@@ -8,8 +8,8 @@
 
 % ========================== INPUT PARAMETERS ============================
 
-mission = 2; % mission number for which certain input parameters are defined below
-fidelity = 'med'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
+mission = 1; % mission number for which certain input parameters are defined below
+fidelity = 'low'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
 
 % ============= Options for mid-fidelity (used only if fidelity=='med')
 
