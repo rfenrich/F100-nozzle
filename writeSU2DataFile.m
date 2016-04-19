@@ -7,6 +7,14 @@ function [] = writeSU2DataFile ( nozzle )
   % Adapt the parameters to the stiffness of the problem (CFL, nbr of sub-iterations of the Newton method, etc.)
 
 	rans = strcmp(nozzle.governing,'rans');
+	
+	if ( rans ) 
+		% --- We use multigrid for RANS (not for Euler)
+		%      -> fewer iterations required
+		nozzle.NbrIte = 250;
+	else
+		nozzle.NbrIte = 500;
+	end
   
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
   fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
@@ -94,9 +102,11 @@ function [] = writeSU2DataFile ( nozzle )
 
 	% INLET CONDITIONS
 	
-  fprintf(DatOut,' MARKER_INLET= ( 10, %f, %f, 1.0, 0.0, 0.0,  ', nozzle.boundaryCdt.TtIn, nozzle.boundaryCdt.PtIn);
-	fprintf(DatOut,'  4, %f, %f, 1.0, 0.0, 0.0,  ', nozzle.boundaryCdt.TsRef, nozzle.boundaryCdt.PsRef);
-	fprintf(DatOut,'  5, %f, %f, 1.0, 0.0, 0.0 ) \n', nozzle.boundaryCdt.TsRef, nozzle.boundaryCdt.PsRef);
+  fprintf(DatOut,' MARKER_INLET= ( 10, %f, %f, 1.0, 0.0, 0.0 ) \n ', nozzle.boundaryCdt.TtIn, nozzle.boundaryCdt.PtIn);
+
+	%fprintf(DatOut,'  4, %f, %f, 1.0, 0.0, 0.0,  ', nozzle.boundaryCdt.TsRef, nozzle.boundaryCdt.PsRef);
+	%fprintf(DatOut,'  5, %f, %f, 1.0, 0.0, 0.0 ) \n', nozzle.boundaryCdt.TsRef, nozzle.boundaryCdt.PsRef);
+  fprintf(DatOut,' MARKER_FAR= ( 4, 5 )                                                               \n');
 	
   fprintf(DatOut,'%% Marker of symmetry boundary (0 implies no marker)                                \n');
   fprintf(DatOut,' MARKER_SYM= ( 1, 2 )                                                               \n');
@@ -132,7 +142,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' RK_ALPHA_COEFF= ( 0.66667, 0.66667, 1.000000 )                                    \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Number of total iterations                                                      \n');
-  fprintf(DatOut,' EXT_ITER= 500                                                                 \n');
+  fprintf(DatOut,' EXT_ITER= %d                                                                 \n', nozzle.NbrIte );
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Linear solver for the implicit formulation (BCGSTAB, FGMRES)                    \n');
   fprintf(DatOut,' LINEAR_SOLVER= FGMRES                                                             \n');
@@ -160,29 +170,33 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,'%% Remove sharp edges from the sensitivity evaluation (NO, YES)                    \n');
   fprintf(DatOut,' SENS_REMOVE_SHARP= YES                                                            \n');
   fprintf(DatOut,'                                                                                    \n');
-  fprintf(DatOut,'%% -------------------------- MULTIGRID PARAMETERS -----------------------------%%  \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Multi-Grid Levels (0 = no multi-grid)                                           \n');
-  fprintf(DatOut,' MGLEVEL= 0                                                                        \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Multi-grid cycle (V_CYCLE, W_CYCLE, FULLMG_CYCLE)                               \n');
-  fprintf(DatOut,' MGCYCLE= W_CYCLE                                                                  \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Multi-Grid PreSmoothing Level                                                   \n');
-  fprintf(DatOut,' MG_PRE_SMOOTH= ( 1, 2, 3, 3 )                                                     \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Multi-Grid PostSmoothing Level                                                  \n');
-  fprintf(DatOut,' MG_POST_SMOOTH= ( 0, 0, 0, 0 )                                                    \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Jacobi implicit smoothing of the correction                                     \n');
-  fprintf(DatOut,' MG_CORRECTION_SMOOTH= ( 0, 0, 0, 0 )                                              \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Damping factor for the residual restriction                                     \n');
-  fprintf(DatOut,' MG_DAMP_RESTRICTION= 0.9                                                          \n');
-  fprintf(DatOut,'%%                                                                                 \n');
-  fprintf(DatOut,'%% Damping factor for the correction prolongation                                  \n');
-  fprintf(DatOut,' MG_DAMP_PROLONGATION= 0.9                                                         \n');
-  fprintf(DatOut,'                                                                                   \n');
+
+	if ( rans )
+  	fprintf(DatOut,'%% -------------------------- MULTIGRID PARAMETERS -----------------------------%%  \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Multi-Grid Levels (0 = no multi-grid)                                           \n');
+  	fprintf(DatOut,' MGLEVEL= 3                                                                        \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Multi-grid cycle (V_CYCLE, W_CYCLE, FULLMG_CYCLE)                               \n');
+  	fprintf(DatOut,' MGCYCLE= V_CYCLE                                                                  \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Multi-Grid PreSmoothing Level                                                   \n');
+  	fprintf(DatOut,' MG_PRE_SMOOTH= ( 1, 2, 3, 3 )                                                     \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Multi-Grid PostSmoothing Level                                                  \n');
+  	fprintf(DatOut,' MG_POST_SMOOTH= ( 0, 0, 0, 0 )                                                    \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Jacobi implicit smoothing of the correction                                     \n');
+  	fprintf(DatOut,' MG_CORRECTION_SMOOTH= ( 0, 0, 0, 0 )                                              \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Damping factor for the residual restriction                                     \n');
+  	fprintf(DatOut,' MG_DAMP_RESTRICTION= 0.9                                                          \n');
+  	fprintf(DatOut,'%%                                                                                 \n');
+  	fprintf(DatOut,'%% Damping factor for the correction prolongation                                  \n');
+  	fprintf(DatOut,' MG_DAMP_PROLONGATION= 0.9                                                         \n');
+  	fprintf(DatOut,'                                                                                   \n');
+	end
+	
   fprintf(DatOut,'%% -------------------- FLOW NUMERICAL METHOD DEFINITION -----------------------%% \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Convective numerical method (JST, LAX-FRIEDRICH, CUSP, ROE, AUSM, HLLC,         \n');
@@ -204,12 +218,15 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,'                                                                                   \n');
 	
 	if ( rans ) 
+		
 		fprintf(DatOut,'% -------------------- TURBULENT NUMERICAL METHOD DEFINITION ------------------%   \n');
 		fprintf(DatOut,'% Convective numerical method (SCALAR_UPWIND)                                      \n');
 		fprintf(DatOut,'CONV_NUM_METHOD_TURB= SCALAR_UPWIND                                                \n');                                                                               
 		fprintf(DatOut,'% Spatial numerical order integration (1ST_ORDER, 2ND_ORDER, 2ND_ORDER_LIMITER)    \n');
 		fprintf(DatOut,'SPATIAL_ORDER_TURB= 1ST_ORDER                                                      \n');
 		fprintf(DatOut,'TIME_DISCRE_TURB= EULER_IMPLICIT                                                   \n');
+		fprintf(DatOut,'RELAXATION_FACTOR_FLOW= 0.1  \n');
+		
 	end
 	
   fprintf(DatOut,'%% --------------------------- CONVERGENCE PARAMETERS --------------------------&  \n');
