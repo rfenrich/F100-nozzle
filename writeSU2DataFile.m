@@ -19,7 +19,7 @@ function [] = writeSU2DataFile ( nozzle )
 	else 
 		nozzle.NbrIte = 300;
 	end
-  nozzle.NbrIte = 10;
+	
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
   fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
   fprintf('		Freestream Static Pressure:    %f Pa\n',nozzle.boundaryCdt.PsRef);
@@ -133,7 +133,11 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,'%% OBJECTIVE_FUNCTION= DRAG                                                          \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Courant-Friedrichs-Lewy condition of the finest grid                            \n');
-  fprintf(DatOut,' CFL_NUMBER= 25                                                                  \n');
+	if ( safeMode )
+  	fprintf(DatOut,' CFL_NUMBER= 25                                                                  \n');
+	else
+		fprintf(DatOut,' CFL_NUMBER= 25                                                                  \n');
+	end
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Adaptive CFL number (NO, YES)                                                   \n');
   fprintf(DatOut,' CFL_ADAPT= NO                                                                    \n');

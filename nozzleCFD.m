@@ -176,7 +176,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 		nozzle.CFDSafeMode = 1;
 		writeSU2DataFile( nozzle );
 		disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
-		!SU2_CFD axinoz.cfg >SU2.job
+		!SU2_CFD axinoz.cfg >SU2_safe.job
 		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
 			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
 		end

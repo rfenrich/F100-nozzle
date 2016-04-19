@@ -78,8 +78,8 @@ function [flag] = checkCFDConvergence (ResFilNam)
 	var = strsplit(ll,{' ', ',', '"', '='});
 	res = str2double(var{iRes});
 	
-	fprintf('  -- Check SU2 convergence.\n');
-	fprintf('      Residual (density) = %f (ini) %f (final) ', resIni, res);
+	fprintf('	-- Check SU2 convergence.\n');
+	fprintf('		Residual (density) = %f (ini) %f (final) ', resIni, res);
 	if ( res > resIni ) 
 		fprintf(' -> NOT converged.\n');
 		flag=0;
