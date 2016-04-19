@@ -213,6 +213,7 @@ while ~converged
         dMdxCoeffFunc = @(x) -dAdx(x)./A(x) + 2*gam*Cf(x)./D(x) + (1+gam)*dTstagdx(x)./(2*Tstag(x));
         options2 = optimset('TolFun',error.solver.apparentThroatLocation);
         dMdxCoeffFunc(nozzle.geometry.xThroat);
+        dMdxCoeffFunc(nozzle.geometry.xThroat);
         nozzle.geometry.xApparentThroat = fzero(dMdxCoeffFunc,nozzle.geometry.xThroat,options2);
         
         % Split problem into before and after nozzle throat, solve for d(M^2)/dx
@@ -255,7 +256,6 @@ while ~converged
     flow.U = flow.M.*sqrt(gam*R*flow.T); % velocity
     flow.Re = flow.density.*flow.U.*D(xPosition)./dynamicViscosity(flow.T); % Reynolds number from definition
 		
-
     % =================== RECALCULATE FRICTION & HEAT ========================
 
     % Heat transfer
@@ -326,6 +326,16 @@ nozzle.exit.P = nozzle.flow.P(end);
 nozzle.exit.T = nozzle.flow.T(end);
 nozzle.exit.U = nozzle.flow.U(end);
 
+% ========================== CALC GEOMETRY ===============================
+
+nozzle.xPosition = xPosition;
+nozzle.geometry.A = A(xPosition);
+nozzle.geometry.dAdx = dAdx(xPosition);
+nozzle.geometry.D = D(xPosition);
+nozzle.wall.t = t(xPosition);
+nozzle.geometry.maxSlope = max(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
+nozzle.geometry.minSlope = min(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
+
 % ==================== CALCULATE APPROX. THRUST ==========================
 % Thrust is only approximate since engine is not taken into account.
 
@@ -339,26 +349,25 @@ nozzle.netThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U - 
 nozzle.grossThrust = nozzle.divergenceFactor*nozzle.massFlowRate*(nozzle.exit.U) + (nozzle.exit.P - freestream.P)*nozzle.exit.A;
 
 % ========================== CALC STRESSES ===============================
-% Stresses are very approximate.
+% Stresses calculated assuming cylinder, nozzle length not constrained in 
+% thermal expansion
 
-nozzle.hoopStress = flow.P.*D(xPosition)./(2*t(xPosition));
-nozzle.thermalHoopStress = 0.5*(nozzle.Tw-nozzle.Text)*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
-%nozzle.thermalLongitudinalStress = 0.5*tempDiff*nozzle.wall.coeffThermalExpansion*nozzle.wall.E/(1-nozzle.wall.poissonRatio);
-nozzle.maxStress = nozzle.hoopStress + nozzle.thermalHoopStress;
+nozzle.stress.hoop = flow.P.*D(xPosition)./(2*t(xPosition));
+
+% Thermal stresses calculated assuming steady-state, give max tensile stress
+ri = nozzle.geometry.D/2; % inner radius
+ro = nozzle.geometry.D/2 + nozzle.wall.t; % outer radius
+nozzle.stress.thermal.radial = nozzle.wall.E*nozzle.wall.coeffThermalExpansion*(nozzle.Tw-nozzle.Text)/(2*(1-nozzle.wall.poissonRatio)).*(1./log(ro./ri)).*(1 - 2*ri.^2./(ro.^2 - ri.^2).*log(ro./ri));
+nozzle.stress.thermal.tangential = nozzle.stress.thermal.radial;
+
+% Estimate vonMises, even though not really valid for composites
+%nozzle.stress.vonMises = sqrt( (nozzle.stress.hoop+nozzle.stress.thermal.tangential).^2 - nozzle.stress.hoop.*nozzle.stress.thermal.radial + nozzle.stress.thermal.radial.^2 );
+nozzle.stress.maxPrincipal = nozzle.stress.hoop + nozzle.stress.thermal.tangential;
+nozzle.stress.principal = [nozzle.stress.maxPrincipal, nozzle.stress.thermal.radial, zeros(length(xPosition),1)];
 
 % ==================== CALC CYCLES TO FAILURE NF =========================
 
-nozzle.Nf = estimateNf(nozzle.Tw,nozzle.maxStress,1);
-
-% ========================== CALC GEOMETRY ===============================
-
-nozzle.xPosition = xPosition;
-nozzle.geometry.A = A(xPosition);
-nozzle.geometry.dAdx = dAdx(xPosition);
-nozzle.geometry.D = D(xPosition);
-nozzle.wall.t = t(xPosition);
-nozzle.geometry.maxSlope = max(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
-nozzle.geometry.minSlope = min(nozzle.geometry.dAdx./pi./nozzle.geometry.D);
+nozzle.Nf = estimateNf(nozzle.Tw,nozzle.stress.maxPrincipal,1);
 
 % =================== CALC NOZZLE MATERIAL VOLUME ========================
 
