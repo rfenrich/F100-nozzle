@@ -20,6 +20,7 @@ function [] = writeSU2DataFile ( nozzle )
 		nozzle.NbrIte = 300;
 	end
 	
+	
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
   fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
   fprintf('		Freestream Static Pressure:    %f Pa\n',nozzle.boundaryCdt.PsRef);
@@ -225,8 +226,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' TIME_DISCRE_FLOW= EULER_IMPLICIT                                                  \n');
   fprintf(DatOut,'                                                                                   \n');
 	
-	if ( rans ) 
-		
+	if ( rans )
 		fprintf(DatOut,'% -------------------- TURBULENT NUMERICAL METHOD DEFINITION ------------------%   \n');
 		fprintf(DatOut,'% Convective numerical method (SCALAR_UPWIND)                                      \n');
 		fprintf(DatOut,'CONV_NUM_METHOD_TURB= SCALAR_UPWIND                                                \n');                                                                               
