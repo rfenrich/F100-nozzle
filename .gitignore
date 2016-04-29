@@ -13,5 +13,25 @@ dakota/input/compressedSensing/*.out
 dakota/input/compressedSensing/*_M*_k*.in
 dakota/input/compressedSensing/TurbofanCompressedSensing_X_all.in
 dakota/input/compressedSensing/*.tex
+
 # Ignore files in local folder:
 local/
+
+# Ignore Matlab generated files:
+*.mat
+*.mexa64
+
+# Ignore user data:
+*.dat
+*.csv
+*.out
+*.out.*
+*.in
+*.in.*
+
+# Ignore SU2 generated files:
+*.job
+*.cfg
+*.geo
+*.mesh
+*.su2
