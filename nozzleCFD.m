@@ -1,4 +1,4 @@
-function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
+function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	% Victorien Menier Feb 2016
 	% INPUTS:
 	% nozzle geometry (i.e. border + wall thickness functions) 
@@ -50,12 +50,9 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	%--- Wall thickness
 	t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall);
-	
-	
 
 	nozzle.geometry.DExit = D(nozzle.geometry.length);
 
-	
 	% ========================== CFD : boundary conditions
 	
 	nozzle.boundaryCdt.Mref  = freestream.M;
@@ -71,7 +68,6 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	
 	nozzle.boundaryCdt.RhoRef = freestream.P/(R*freestream.T);
 	nozzle.boundaryCdt.Re     = nozzle.boundaryCdt.RhoRef*freestream.U*nozzle.boundaryCdt.LRey/nozzle.boundaryCdt.MuRef;
-	
 	
 	%% ======================= MESH GENERATION ===========================
 	
