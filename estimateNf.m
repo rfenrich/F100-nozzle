@@ -87,9 +87,9 @@ for mm = 1:length(maxTempVec)
     if(maxStress/1e6 >= max(coefs773(2,:)) - 1e-6) % max stress exceeded
         Nf.oxidation(mm) = 0; % i.e. 0
     elseif(maxStress/1e6 < min(coefs773(2,:)) + 1e-6) % assume a fatigue limit
-        Nf.oxidation(mm) = 1e9; % i.e. 1 billion hours or infinity
+        Nf.oxidation(mm) = 1e9/deltat; % i.e. 1 billion hours or infinity
     elseif(maxTemp < 273.15) 
-        Nf.oxidation(mm) = 1e9; % i.e. 1 billion hours or infinity
+        Nf.oxidation(mm) = 1e9/deltat; % i.e. 1 billion hours or infinity
     else
         Tm = maxTemp;
         % If temperature range exceeded, fit data to nearest temperature
@@ -130,13 +130,13 @@ for mm = 1:length(maxTempVec)
         if(Tm <= 773.15)
             sigmaLimit = min(coefs773(2,:)) + (max(coefs773(2,:)) - min(coefs773(2,:)))*(Tm - 773.15)/(273.15 - 773.15);
             if(maxStress/1e6 < sigmaLimit)
-                Nf.oxidation(mm) = 1e9; % i.e. 1 billion hours or infinity
+                Nf.oxidation(mm) = 1e9/deltat; % i.e. 1 billion hours
             else
-                Nf.oxidation(mm) = fzero(zeroFunc,startGuess);
+                Nf.oxidation(mm) = fzero(zeroFunc,startGuess)/deltat;
             end
         else
 
-            Nf.oxidation(mm) = fzero(zeroFunc,startGuess);
+            Nf.oxidation(mm) = fzero(zeroFunc,startGuess)/deltat;
             if(Nf.oxidation(mm) < 0 || Nf.oxidation(mm) > 1e9)
                 fprintf('Nf.oxidation < 0\n');
                 fprintf('Max stress: %f\n',maxStress);
