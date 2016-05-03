@@ -20,6 +20,7 @@ function [] = writeSU2DataFile ( nozzle )
 		nozzle.NbrIte = 300;
 	end
 	
+	nozzle.NbrIte = 10;
 	
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
   fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );

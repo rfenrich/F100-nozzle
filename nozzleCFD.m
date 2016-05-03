@@ -15,6 +15,17 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error )
 	fprintf('------------------  NOZZLECFD ------------------\n')
 	fprintf('--------------------------------------------------\n\n')
 		
+	
+	% --- Hack used for the interface w/ dakota
+	%      cf ./dakota-directory
+	
+	if ( exist('nozzle.workdir') )
+		cd nozzle.workdir;
+		addpath /Users/menier/calcul/DARPA/F100-nozzle;
+	end
+	
+	% ---
+	
 	nozzle.success = 0;
 	
 	% ========================== GAS PROPERTIES ==============================
