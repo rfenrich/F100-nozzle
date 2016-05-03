@@ -30,7 +30,8 @@ function [  ] = nozzleCFDGmsh( nozzle, xwall, ywall )
 	CrdBox(5,1) = -0.67;                     CrdBox(5,2) = 10;
 	CrdBox(6,1) = -0.67;                     CrdBox(6,2) = 0.4244;
 	CrdBox(7,1) = 0.1548;                    CrdBox(7,2) = 0.4244;
-	CrdBox(8,1) = nozzle.geometry.length;    CrdBox(8,2) =  0.3151;
+	CrdBox(8,1) = nozzle.geometry.length;    %CrdBox(8,2) =  0.3151;
+	CrdBox(8,2) = ywall(end)+0.012;
 	
 	%--- Add points
 	
