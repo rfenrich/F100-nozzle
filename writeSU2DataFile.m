@@ -6,18 +6,19 @@ function [] = writeSU2DataFile ( nozzle )
   % TODO later:
   % Adapt the parameters to the stiffness of the problem (CFL, nbr of sub-iterations of the Newton method, etc.)
 
+
 	rans = strcmp(nozzle.governing,'rans');
 	
 	safeMode =  nozzle.CFDSafeMode;
-	
+		
 	if ( rans ) 
 		% --- We use multigrid for RANS (not for Euler)
 		%      -> fewer iterations required
 		nozzle.NbrIte = 200;
-	else if ( safeMode )
-		nozzle.NbrIte = 600;
+	elseif ( safeMode )
+		nozzle.NbrIte = 350;
 	else 
-		nozzle.NbrIte = 300;
+		nozzle.NbrIte = 250;
 	end
 	
 	
@@ -220,7 +221,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' SLOPE_LIMITER_FLOW= VENKATAKRISHNAN                                               \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% 1st, 2nd and 4th order artificial dissipation coefficients                      \n');
-  fprintf(DatOut,' AD_COEFF_FLOW= ( 0.15, 0.5, 0.02 )                                                \n');
+  fprintf(DatOut,' AD_COEFF_FLOW= ( 0.15, 0.5, 0.03 )                                                \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Time discretization (RUNGE-KUTTA_EXPLICIT, EULER_IMPLICIT, EULER_EXPLICIT)      \n');
   fprintf(DatOut,' TIME_DISCRE_FLOW= EULER_IMPLICIT                                                  \n');
