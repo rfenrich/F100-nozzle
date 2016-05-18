@@ -26,9 +26,11 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	
 	% ---
 	
+	nozzle.output= 'PARAVIEW'; % TECPLOT OR PARAVIEW
+	
 	nozzle.success = 0;
 	
-	postpro = 0;
+	postpro = 0; % R
 	
 	% ========================== GAS PROPERTIES ==============================
 	gam = fluid.gam;
@@ -156,12 +158,15 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		% Write data file (.cfg) for SU2
 		
 		nozzle.CFDSafeMode = 0;
-
 		
 		writeSU2DataFile( nozzle );
 		
 		if(exist('history.dat', 'file') == 2)
 		  delete('./history.dat');
+		end
+		
+		if(exist('history.csv', 'file') == 2)
+		  delete('./history.csv');
 		end
 		
 		if(exist('restart_flow.dat', 'file') == 2)
@@ -187,7 +192,14 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		% If converged, continue.
 		% If diverged, restart the sim using a safer (but slower) set of input parameters.
 		
-		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+		
+		if ( strcmp(nozzle.output,'PARAVIEW') )
+			ResFilNam='history.csv';
+		else
+			ResFilNam='history.dat';
+		end
+				
+		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence (ResFilNam) ~= 1 )
 			
 			if ( strcmp(nozzle.governing,'rans') )
 				% No safe mode for RANS yet (input parameters are already safe for RANS)
@@ -199,7 +211,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 			writeSU2DataFile( nozzle );
 			disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
 			!SU2_CFD axinoz.cfg >SU2_safe.job
-			if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+			if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence (ResFilNam) ~= 1 )
 				error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
 			end
 		end

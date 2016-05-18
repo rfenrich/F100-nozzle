@@ -13,7 +13,7 @@ fidelity = 'med'; % 'low' (quasi-1D flow), 'med' (Euler), or 'high' (TBD)
 
 % ============= Options for mid-fidelity (used only if fidelity=='med')
 
-nozzle.meshSize  = 'medium'; % 'coarse', 'medium', or 'fine'
+nozzle.meshSize  = 'coarse'; % 'coarse', 'medium', or 'fine'
 nozzle.governing = 'euler'; % 'euler' or 'rans'
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------

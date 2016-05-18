@@ -21,7 +21,6 @@ function [] = writeSU2DataFile ( nozzle )
 		nozzle.NbrIte = 250;
 	end
 	
-	nozzle.NbrIte = 10;
 	
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
   fprintf('		Freestream Mach:               %f\n'   ,nozzle.boundaryCdt.Mref );
@@ -283,7 +282,13 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' MESH_FORMAT= SU2                                                                  \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Output file format (PARAVIEW, TECPLOT)                                          \n');
-  fprintf(DatOut,' OUTPUT_FORMAT= TECPLOT                                                            \n');
+	
+	if ( strcmp(nozzle.output,'PARAVIEW') )
+		fprintf(DatOut,' OUTPUT_FORMAT= PARAVIEW                                                            \n');
+	else
+		fprintf(DatOut,' OUTPUT_FORMAT= TECPLOT                                                            \n');
+	end
+	
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Output file convergence history                                                 \n');
   fprintf(DatOut,' CONV_FILENAME= history                                                            \n');
