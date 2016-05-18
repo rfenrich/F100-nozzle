@@ -4,7 +4,7 @@ function [] = WriteGMFStruc (FilNam, xq, yq, vq )
 	% Writes a structured mesh defined by xq, yq
 	% and a solution file, according to the values of vq
 	
-	[Ni,Nj] = size(xq)
+	[Nj,Ni] = size(xq)
 	
 	mesh.Dim   = 2;
 	

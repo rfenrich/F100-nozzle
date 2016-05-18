@@ -17,6 +17,8 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		
 	nozzle.success = 0;
 	
+	postpro = 0;
+	
 	% ========================== GAS PROPERTIES ==============================
 	gam = fluid.gam;
 	R   = fluid.R;
@@ -81,14 +83,16 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		nozzle.yplus  = 2;      % y+ -> governs the minimal size of the 1st layer of the boundary layer mesh
 	elseif ( strcmp(nozzle.meshSize,'medium') ) 
 		nozzle.sizWal = 0.005;
-		nozzle.sizFar = 0.4; 
+		nozzle.sizFar = 1; 
 		nozzle.sizSym = 0.05; 
 		nozzle.yplus  = 1.5;
 	elseif ( strcmp(nozzle.meshSize,'fine') ) 
 		nozzle.sizWal = 0.0025; 
-		nozzle.sizFar = 0.4; 
+		nozzle.sizFar = 1; 
 		nozzle.sizSym = 0.025; 
 		nozzle.yplus  = 1;
+	else 
+		error ('  Unknown mesh complexity! (Must be either coarse, medium or fine)')
 	end
 	
 	xPosition = linspace(0,nozzle.geometry.length,100);
@@ -96,18 +100,25 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	%nozzleCFDGmsh(nozzle, xPosition, A(xPosition') )
 	nozzleCFDGmsh(nozzle, xPosition, D(xPosition')/2 )
 	
-	if(exist('axinoz.mesh', 'file') == 2)
-	  delete('axinoz.mesh'); 
+	if ( postpro == 1 )
+		if(exist('axinoz.mesh', 'file') ~= 2)
+		  error('NO axinoz.mesh was found!');
+		end
+	else
+		if(exist('axinoz.mesh', 'file') == 2)
+		  delete('axinoz.mesh'); 
+		end
+		
+		fprintf('		Calling gmsh (Cf gmsh.job).\n');
+		!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
+		
+		if(exist('axinoz.mesh', 'file') ~= 2)
+		  error('  ## ERROR : gmsh failed to generate the mesh. See gmsh.job for more details.'); 
+		end
+		
+		fprintf('		%% %s created.\n', 'axinoz.mesh');
+		
 	end
-	
-	fprintf('		Calling gmsh (Cf gmsh.job).\n');
-	!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
-	
-	if(exist('axinoz.mesh', 'file') ~= 2)
-	  error('  ## ERROR : gmsh failed to generate the mesh. See gmsh.job for more details.'); 
-	end
-	
-	fprintf('		%% %s created.\n', 'axinoz.mesh');
 	
 	%--- Convert to SU2 file format
 	
@@ -128,54 +139,60 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	
 	fprintf('		%% %s created.\n', 'axinoz.su2');
 	
-	% ======================= RUN CFD SIMULATION (SU2) ===============
-	% Write data file (.cfg) for SU2
 	
-	nozzle.CFDSafeMode = 0;
-	writeSU2DataFile( nozzle );
-	
-	if(exist('history.dat', 'file') == 2)
-	  delete('./history.dat');
-	end
-	
-	if(exist('restart_flow.dat', 'file') == 2)
-	  delete('./restart_flow.dat');
-	end
-	
-	%if ( strcmp(nozzle.governing,'rans') )
-	%	tmp = input('  ## WARNING ! You might want to use an euler flow computation for now.\n Note: a viscous mesh was generated.\n Do you want to continue? (y/n) \n', 's');
-	%	if ( ~strcmp(tmp,'y') )
-	%		fprintf('STOP\n');
-	%		return;
-	%	else
-	%		fprintf('-> Continue\n');
-	%	end
-	%end
-	
-	disp('	-- Running SU2 (Cf SU2.job )')
-	!SU2_CFD axinoz.cfg >SU2.job
-	
-	% --- Restart simulation if not converged
-	
-	% Check the final residual of the simulation.
-	% If converged, continue.
-	% If diverged, restart the sim using a safer (but slower) set of input parameters.
-	
-	if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+	if ( postpro ~= 1 )
+		% ======================= RUN CFD SIMULATION (SU2) ===============
+		% Write data file (.cfg) for SU2
 		
-		if ( strcmp(nozzle.governing,'rans') )
-			% No safe mode for RANS yet (input parameters are already safe for RANS)
-			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
-		end
+		nozzle.CFDSafeMode = 0;
+
 		
-		% The CFD solution is not converged : restart with the safe mode on
-		nozzle.CFDSafeMode = 1;
 		writeSU2DataFile( nozzle );
-		disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
-		!SU2_CFD axinoz.cfg >SU2_safe.job
-		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
-			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+		
+		if(exist('history.dat', 'file') == 2)
+		  delete('./history.dat');
 		end
+		
+		if(exist('restart_flow.dat', 'file') == 2)
+		  delete('./restart_flow.dat');
+		end
+		
+		%if ( strcmp(nozzle.governing,'rans') )
+		%	tmp = input('  ## WARNING ! You might want to use an euler flow computation for now.\n Note: a viscous mesh was generated.\n Do you want to continue? (y/n) \n', 's');
+		%	if ( ~strcmp(tmp,'y') )
+		%		fprintf('STOP\n');
+		%		return;
+		%	else
+		%		fprintf('-> Continue\n');
+		%	end
+		%end
+		
+		disp('	-- Running SU2 (Cf SU2.job )')
+		!SU2_CFD axinoz.cfg >SU2.job
+		
+		% --- Restart simulation if not converged
+		
+		% Check the final residual of the simulation.
+		% If converged, continue.
+		% If diverged, restart the sim using a safer (but slower) set of input parameters.
+		
+		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+			
+			if ( strcmp(nozzle.governing,'rans') )
+				% No safe mode for RANS yet (input parameters are already safe for RANS)
+				error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+			end
+			
+			% The CFD solution is not converged : restart with the safe mode on
+			nozzle.CFDSafeMode = 1;
+			writeSU2DataFile( nozzle );
+			disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
+			!SU2_CFD axinoz.cfg >SU2_safe.job
+			if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+				error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+			end
+		end
+	
 	end
 	
 	% ======================= POST PROCESSING ===============
