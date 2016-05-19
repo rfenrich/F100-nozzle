@@ -31,7 +31,9 @@
 clear all; close all; clc;
 
 fidelity = 'med'; % 'low' or 'med'
-F100dir = '/home/rick/Documents/Research/F100-nozzle'; % directory of F100-nozzle code
+%F100dir = '/home/rick/Documents/Research/F100-nozzle'; % directory of F100-nozzle code
+F100dir = '/farmshare/user_data/rfenrich/F100-nozzle';
+addpath(F100dir);
 
 % Set up initial B-spline shape
 Dinlet = 0.3255*2;
@@ -121,7 +123,7 @@ else
 end
 
 % Set nonlinear inequality constraint function
-nonlconFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'nonlcon',F100dir);
+nonlconFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'nonlcon');
 
 % Set optimization options
 options.MaxIter = 50;
@@ -134,7 +136,7 @@ options.UseParallel = true; % estimate finite difference gradients in parallel
 % Print data to screen
 fprintf('Number design variables: %i\n',n);
 
-objFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'volume',F100dir);
+objFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'volume');
 
 figure;
 hold on;
