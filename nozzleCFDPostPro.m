@@ -180,6 +180,7 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 
         % --- Compute thrust
         % T = 2PI * Int_{0}^{R} (rho U ( U - U0) + P - Po ) r dr
+
         thrust = thrust + dy*(rhoU*(U-U0)+P-P0);
         mdot = mdot + dy*rhoU;
         

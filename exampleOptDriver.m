@@ -143,6 +143,6 @@ tic;
 timeToEnd = toc;
 fprintf('Time to completion: %0.2f sec\n',timeToEnd);
 
-%nozzle = exampleWrapper(x,knots,coefs,fidelity,'all');
+% nozzle = exampleWrapper(x,knots,coefs,fidelity,'all',F100dir);
 
 

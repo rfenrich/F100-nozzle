@@ -125,6 +125,10 @@ for mm = 1:length(maxTempVec)
             ind = find(val > 0,1,'first');
             startGuess = Tstart(ind);
             %startGuess = 5000;
+				else
+					fprintf('  ## ERROR in EstimateNf. Return 0.')
+					Nf = 0;
+					return;
         end
 
         if(Tm <= 773.15)
