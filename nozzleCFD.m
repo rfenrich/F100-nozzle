@@ -1,4 +1,4 @@
-function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
+function [ nozzle ] = nozzleCFD( varargin )
 	% Victorien Menier Feb 2016
 	% INPUTS:
 	% nozzle geometry (i.e. border + wall thickness functions) 
@@ -10,10 +10,21 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	% OUTPUTS:
 	% nozzle = modified input structure with additional fields including flow
 	% and specific geometry
+
+        % Parse inputs
+        fluid = varargin{1};
+        freestream = varargin{2};
+        nozzle = varargin{3};
+        error = varargin{4};
+        if( nargin == 5 )
+          evalNum = varargin{5};
+        else
+          evalNum = 0;
+        end
 	
-	fprintf('\n\n--------------------------------------------------\n')
-	fprintf('------------------  NOZZLECFD ------------------\n')
-	fprintf('--------------------------------------------------\n\n')
+	%fprintf('\n\n--------------------------------------------------\n')
+	%fprintf('------------------  NOZZLECFD ------------------\n')
+	%fprintf('--------------------------------------------------\n\n')
 		
 	nozzle.success = 0;
 	
@@ -71,7 +82,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	
 	%% ======================= MESH GENERATION ===========================
 	
-	fprintf('	-- Mesh generation.\n');
+	%fprintf('	-- Mesh generation.\n');
 	
 	if ( strcmp(nozzle.meshSize,'coarse') ) 
 		% Mesh size? -> Cf NozzleCFDGmsh()	
@@ -92,42 +103,52 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	end
 	
 	xPosition = linspace(0,nozzle.geometry.length,100);
-	fprintf('		axinoz.geo (input file to gmsh) created.\n');
-	%nozzleCFDGmsh(nozzle, xPosition, A(xPosition') )
+	%fprintf('		axinoz.geo (input file to gmsh) created.\n');
+	fprintf('%i: axinoz.geo created\n',evalNum);
+        %nozzleCFDGmsh(nozzle, xPosition, A(xPosition') )
 	nozzleCFDGmsh(nozzle, xPosition, D(xPosition')/2 )
 	
 	if(exist('axinoz.mesh', 'file') == 2)
 	  delete('axinoz.mesh'); 
 	end
 	
-	fprintf('		Calling gmsh (Cf gmsh.job).\n');
-	!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
-	
+	%fprintf('		Calling gmsh (Cf gmsh.job).\n');
+        fprintf('%i: calling gmsh\n',evalNum);
+	!/farmshare/user_data/rfenrich/gmsh-2.11.0-Linux/bin/gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
+        %!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
+
 	if(exist('axinoz.mesh', 'file') ~= 2)
-	  error('  ## ERROR : gmsh failed to generate the mesh. See gmsh.job for more details.'); 
-	end
+	  msg = sprintf('%i: ## ERROR: gmsh failed to generate the mesh. See gmsh.job for more details.',evalNum);
+          %error('  ## ERROR : gmsh failed to generate the mesh. See gmsh.job for more details.'); 
+	  error(msg);
+        end
 	
-	fprintf('		%% %s created.\n', 'axinoz.mesh');
-	
+	%fprintf('		%% %s created.\n', 'axinoz.mesh');
+        fprintf('%i: axinoz.mesh created\n',evalNum);	
+
 	%--- Convert to SU2 file format
 	
 	if(exist('axinoz.su2', 'file') == 2)
 	  delete('axinoz.su2'); 
 	end
 	
-	fprintf('		Mesh pre-processing/conversion to .su2\n');
-	meshGMF = ReadGMF('axinoz.mesh');
+	%fprintf('		Mesh pre-processing/conversion to .su2\n');
+	fprintf('%i: mesh pre-processing/conversion to .su2\n',evalNum);
+        meshGMF = ReadGMF('axinoz.mesh');
 	meshGMF = meshPrepro(meshGMF);
 	meshSU2 = convertGMFtoSU2(meshGMF);
 	WriteSU2(meshSU2, 'axinoz.su2');
 	
 	if(exist('axinoz.su2', 'file') ~= 2)
-	  fprintf('  ## ERROR : MESH CONVERSION FROM .mesh to .su2 FAILED.\n');
-		return;
+          msg = sprintf('%i: ## ERROR: mesh conversion from .mesh to .su2 failed.',evalNum);
+	  %fprintf('  ## ERROR : MESH CONVERSION FROM .mesh to .su2 FAILED.\n');
+	  error(msg);
+          %return;
 	end
 	
-	fprintf('		%% %s created.\n', 'axinoz.su2');
-	
+	%fprintf('		%% %s created.\n', 'axinoz.su2');
+        fprintf('%i: axinoz.su2 created\n',evalNum);	
+
 	% ======================= RUN CFD SIMULATION (SU2) ===============
 	% Write data file (.cfg) for SU2
 	
@@ -152,8 +173,11 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	%	end
 	%end
 	
-	disp('	-- Running SU2 (Cf SU2.job )')
-	!SU2_CFD axinoz.cfg >SU2.job
+	%disp('	-- Running SU2 (Cf SU2.job )')
+        fprintf('%i: running SU2 (see SU2.job)\n',evalNum);
+
+	!/farmshare/user_data/rfenrich/SU2_install/bin/SU2_CFD axinoz.cfg >SU2.job
+        %!SU2_CFD axinoz.cfg >SU2.job
 	
 	% --- Restart simulation if not converged
 	
@@ -165,16 +189,22 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		
 		if ( strcmp(nozzle.governing,'rans') )
 			% No safe mode for RANS yet (input parameters are already safe for RANS)
-			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+			msg = sprintf('%i: ## ERROR: unable to converge the CFD solution',evalNum);
+                        error(msg);  
+	                %error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
 		end
 		
 		% The CFD solution is not converged : restart with the safe mode on
 		nozzle.CFDSafeMode = 1;
 		writeSU2DataFile( nozzle );
-		disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
-		!SU2_CFD axinoz.cfg >SU2_safe.job
+		%disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
+		fprintf('%i: running SU2 for the 2nd time using safer parameters (see SU2_safe.job)',evalNum);
+                !/farmshare/user_data/rfenrich/SU2_install/bin/SU2_CFD axinoz.cfg >SU2_safe.job
+                %!SU2_CFD axinoz.cfg >SU2_safe.job
 		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
-			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+			msg = sprintf('%i: ## ERROR: unable to converge the CFD solution (2)',evalNum);
+			error(msg);
+			%error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
 		end
 	end
 	
@@ -184,7 +214,10 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	
 	% Extract averaged solution values at the nozzle's exit
 	nozzle = nozzleCFDPostPro(meshSU2, SolSU2, nozzle, fluid, freestream);
-	
+	fprintf('%i: post-processing complete\n',evalNum);	
+
 	nozzle.success = 1;
+        
+        return;
 
 end
