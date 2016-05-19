@@ -1,4 +1,4 @@
-function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
+function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, err )
 	% Victorien Menier Feb 2016
 	% INPUTS:
 	% nozzle geometry (i.e. border + wall thickness functions) 
@@ -13,8 +13,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 	
 	fprintf('\n\n--------------------------------------------------\n')
 	fprintf('------------------  NOZZLECFD ------------------\n')
-	fprintf('--------------------------------------------------\n\n')
-		
+	fprintf('--------------------------------------------------\n\n')		
 	
 	% --- Hack used for the interface w/ dakota
 	%      cf ./dakota-directory
@@ -176,7 +175,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		
 		if ( strcmp(nozzle.governing,'rans') )
 			% No safe mode for RANS yet (input parameters are already safe for RANS)
-			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+			error('  ## ERROR nozzleCFD : Unable to converge the CFD solution.');
 		end
 		
 		% The CFD solution is not converged : restart with the safe mode on
@@ -185,7 +184,7 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error)
 		disp('	-- Running SU2 for the 2nd time using safer parameters (Cf SU2_safe.job )')
 		!SU2_CFD axinoz.cfg >SU2_safe.job
 		if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
-			error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
+			error('  ## ERROR nozzleCFD : Unable to converge the CFD solution.');
 		end
 	end
 	
