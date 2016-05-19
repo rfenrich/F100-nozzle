@@ -119,13 +119,14 @@ function [ nozzle ] = nozzleCFD( varargin )
 	
 	xPosition = linspace(0,nozzle.geometry.length,100);
 	%fprintf('		axinoz.geo (input file to gmsh) created.\n');
-	fprintf('%i: axinoz.geo created\n',evalNum);
+	fprintf('%i: axinoz.geo (input file to gmsh) created\n',evalNum);
         %nozzleCFDGmsh(nozzle, xPosition, A(xPosition') )
 	nozzleCFDGmsh(nozzle, xPosition, D(xPosition')/2 )
 	
 	if ( postpro == 1 )
 		if(exist('axinoz.mesh', 'file') ~= 2)
-		  error('NO axinoz.mesh was found!');
+		  msg = sprintf('%i: ## ERROR: no axinoz.mesh was found!',evalNum);
+		  error(msg);
 		end
 	else
 		if(exist('axinoz.mesh', 'file') == 2)
@@ -134,7 +135,6 @@ function [ nozzle ] = nozzleCFD( varargin )
 		
 		fprintf('%i: calling gmsh\n',evalNum);
 		!gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
-		%!/farmshare/user_data/rfenrich/gmsh-2.11.0-Linux/bin/gmsh axinoz.geo -2 -o axinoz.mesh > gmsh.job
 	
 		if(exist('axinoz.mesh', 'file') ~= 2)
 	  	  msg = sprintf('%i: ## ERROR: gmsh failed to generate the mesh. See gmsh.job for more details.',evalNum);
@@ -241,7 +241,7 @@ function [ nozzle ] = nozzleCFD( varargin )
 			fprintf('%i: running SU2 for the 2nd time using safer parameters (see SU2_safe.job)',evalNum);
 	                %!/farmshare/user_data/rfenrich/SU2_install/bin/SU2_CFD axinoz.cfg >SU2_safe.job
         	        !SU2_CFD axinoz.cfg > SU2_safe.job
-			if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence ('history.dat') ~= 1 )
+			if ( exist('restart_flow.dat', 'file') ~= 2 || checkCFDConvergence (ResFilNam) ~= 1 )
 				msg = sprintf('%i: ## ERROR: unable to converge the CFD solution (2)',evalNum);
 				error(msg);
 				%error('  ## Error nozzleCFD : Unable to converge the CFD solution.');
