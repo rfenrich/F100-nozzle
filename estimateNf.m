@@ -43,6 +43,14 @@ for mm = 1:length(maxTempVec)
 
     % Assume minimum stress is 0.
     stressRange = maxStress;
+    if(stressRange < 0) % i.e. compression
+      stressRange = -stressRange;
+      fprintf('sign of stressRange flipped\n');
+    end
+    if(~isreal(stressRange))
+      stressRange = abs(real(stressRange));
+      fprintf('\n!!!!!!!!!!!! stressRange is imaginary !!!!!!!!!!!\n');
+    end 
 
     % ===================== ESTIMATE Nf DUE TO FATIGUE =======================
     % Oxidation has a small effect on residual strength; it is neglected here.
