@@ -66,6 +66,15 @@ function [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, err )
 	t = @(x) piecewiseLinearGeometry(x,'t',nozzle.wall);
 
 	nozzle.geometry.DExit = D(nozzle.geometry.length);
+    
+    % --- Calc nozzle material volume
+    % Volume calculation only works for spline parameterized nozzle geometry
+    % and piecewise-linear parameterized nozzle wall thickness
+    if(exist('pp','var')) % Exact volume for cubic spline parameterization
+        nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
+    else % Approximate volume using trapezoidal integration
+        nozzle.geometry.volume = wallVolume(nozzle.geometry.length,D,t,'integrate');
+    end
 
 	% ========================== CFD : boundary conditions
 	

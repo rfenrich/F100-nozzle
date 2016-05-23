@@ -60,6 +60,8 @@ function [ A, dAdx, D, nozzle ] = nozzleParameterization( nozzle )
 	    nozzle.geometry.xThroat = xThroat;
 	    nozzle.geometry.xApparentThroat = nozzle.geometry.xThroat; % initialize apparent throat location
 	    nozzle.throat.A = pi*yThroat^2;
+        nozzle.inlet.A = pi*nozzle.geometry.bSpline.coefs(2,1)^2;
+        nozzle.exit.A = pi*nozzle.geometry.bSpline.coefs(2,end)^2;        
 	    nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
 	    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;
 
@@ -91,6 +93,8 @@ function [ A, dAdx, D, nozzle ] = nozzleParameterization( nozzle )
 	    nozzle.geometry.xThroat = xThroat;
 	    nozzle.geometry.xApparentThroat = nozzle.geometry.xThroat; % initialize apparent throat location
 	    nozzle.throat.A = pi*yThroat^2;
+        nozzle.inlet.A = pi*nozzle.geometry.bSpline.coefs(2,1)^2;
+        nozzle.exit.A = pi*nozzle.geometry.bSpline.coefs(2,end)^2;
 	    nozzle.geometry.Ainlet2Athroat = nozzle.inlet.A/nozzle.throat.A;
 	    nozzle.geometry.Aexit2Athroat = nozzle.exit.A/nozzle.throat.A;    
 
