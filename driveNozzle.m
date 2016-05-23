@@ -17,7 +17,7 @@ nozzle.meshSize  = 'coarse'; % 'coarse', 'medium', or 'fine'
 nozzle.governing = 'euler'; % 'euler' or 'rans'
 
 % --------------------- SET HEAT TRANSFER PARAMS -------------------------
-nozzle.hInf = 500; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
+nozzle.hInf = 25; % W/m^2-K, heat transfer coefficient from external nozzle wall to environment
 
 % --------------------- SET MATERIAL PROPERTIES --------------------------
 % SEPCARBINOX A500, a ceramic matrix composite
@@ -55,16 +55,16 @@ elseif(mission == 5) % subsonic flow in nozzle
     nozzle.inlet.Pstag = 1.1e5;    
 end
 
-% ------------------- SET ERROR TOLERANCE RANGES -------------------------
-% Set error tolerances for various iterations and solvers
-error.betweenIterations.exitTemp = 1e-8;
-error.solver.apparentThroatLocation = 1e-6;
-error.solver.M2relative = 1e-10;
-error.solver.M2absolute = 1e-10;
-error.dMdxDenominator = 4; % this is not an error tolerance, rather it is used to set the slope of dMdx in the transonic regime
+% ------------------- SET err TOLERANCE RANGES -------------------------
+% Set err tolerances for various iterations and solvers
+err.betweenIterations.exitTemp = 1e-8;
+err.solver.apparentThroatLocation = 1e-6;
+err.solver.M2relative = 1e-10;
+err.solver.M2absolute = 1e-10;
+err.dMdxDenominator = 4; % this is not an err tolerance, rather it is used to set the slope of dMdx in the transonic regime
 
 % ---------------------- SET NOZZLE GEOMETRY -----------------------------
-nozzle.geometry.shape = 'B-spline'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
+nozzle.geometry.shape = 'B-spline-mex'; % options include 'linear', 'spline', 'B-spline', and 'B-spline-mex'
 if(strcmp(nozzle.geometry.shape,'spline')) 
     % To parameterize using a cubic spline, the following must be provided:
     % spline.seed = either a shape already defined in the nozzleGeometry.m 
@@ -98,9 +98,9 @@ if(strcmp(nozzle.geometry.shape,'spline'))
     
 elseif(strcmp(nozzle.geometry.shape,'B-spline') || strcmp(nozzle.geometry.shape,'B-spline-mex'))
     % B-spline geometry defined by knots vector and coefficients matrix
-	nozzle.geometry.bSpline.knots = [0 0 0 0 1:12 13 13 13 13]';
-	nozzle.geometry.bSpline.coefs = [0.0000 0.0000 0.1500 0.1700 0.1900 0.2124 0.2269 0.2734 0.3218 0.3343 0.3474 0.4392 0.4828 0.5673 0.6700 0.6700;
-                                     0.3255 0.3255 0.3255 0.3255 0.3255 0.3238 0.2981 0.2817 0.2787 0.2790 0.2804 0.2936 0.2978 0.3049 0.3048 0.3048];
+	nozzle.geometry.bSpline.knots = [0 0 0 0 1:14 15 15 15 15]';
+	nozzle.geometry.bSpline.coefs = [0.0000 0.0000 0.1500 0.1700 0.1900 0.2124 0.2269 0.2734 0.3218 0.3218 0.3230 0.3343 0.3474 0.4392 0.4828 0.5673 0.6700 0.6700;
+                                     0.3255 0.3255 0.3255 0.3255 0.3255 0.3238 0.2981 0.2817 0.2787 0.2787 0.2787 0.2797 0.2807 0.2936 0.2978 0.3049 0.3048 0.3048];
 
     % Determine nozzle throat
     nozzle.geometry.bSpline.degree = length(nozzle.geometry.bSpline.knots) - length(nozzle.geometry.bSpline.coefs) - 1;
@@ -157,13 +157,13 @@ fprintf('Wall Geo: %s\n',nozzle.wall.shape);
 
 % ------------------------- RUN CALCULATIONS -----------------------------
 if(strcmp(fidelity,'low'))
-	[ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, error );
+	[ nozzleI ] = nozzleIdeal( fluid, freestream, nozzle, err );
     tic;
-	[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, error );
+	[ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, err );
     TimeToExec = toc;
 elseif(strcmp(fidelity,'med'))
     tic;
-    [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, error);
+    [ nozzle ] = nozzleCFD( fluid, freestream, nozzle, err);
     TimeToExec = toc;
 else
     error('Incorrect fidelity specified.');
