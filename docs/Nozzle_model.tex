@@ -1,0 +1,333 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{xfrac}
+\usepackage{bbm}
+\usepackage{multicol}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\providecommand{\e}[1]{\ensuremath{\times 10^{#1}}}
+
+\title{F100-PW-220 Non-Ideal Nozzle Model}
+\author{Richard W. Fenrich\\Department of Aeronautics and Astronautics\\Stanford University, Stanford, CA\\rfenrich@stanford.edu}
+\date{July 31, 2015}
+
+\begin{document}
+
+\maketitle
+
+%\section*{Nomenclature}
+%
+%\begin{multicols}{2}
+%\begin{tabbing}
+%  XXX \= \kill% this line sets tab stop
+%  $A$ \> local cross-sectional area \\
+%  $C_f$ \> local skin friction coefficient \\
+%  $C_p$ \> specific heat capacity, const. $P$ \\
+%  $D$ \> local diameter of nozzle \\
+%  $f(M)$ \> area-Mach function \\
+%  $h$ \> heat transfer coefficient \\
+%  $k$ \> thermal conductivity \\
+%  $M$ \> local Mach number \\  
+%  $Nu$ \> Nusselt number \\
+%  $P$ \> pressure \\
+%  $Pr$ \> Prandtl number \\
+%  $\dot{Q}$ \> transverse outward heat flow \\
+%  $R$ \> thermal resistance \\
+%  $Re$ \> Reynolds number \\
+%  $S$ \> Sutherland coefficient \\
+%  $T$ \> temperature \\
+%  $t$ \> wall thickness \\
+%  $U$ \> velocity \\
+%  $x$ \> distance along nozzle axis \\
+%  $\gamma$ \> ratio of specific heats \\ 
+%  $\mu$ \> dynamic viscosity \\
+%  $\rho$ \> density \\
+%  $\sigma$ \> hoop stress \\
+%  \\
+%  \textit{Subscript}\\
+%  $f$ \> fluid \\
+%  $i$ \> incompressible \\
+%  $t$ \> stagnation property \\
+%  $w$ \> nozzle wall \\  
+%  $x$ \> based on x \\
+%  $\infty$ \> environment \\
+%  \textit{Superscript}\\
+%  $*$ \> sonic condition \\
+%  $'$ \> reference \\
+% \end{tabbing}
+% \end{multicols}
+
+\section{Model}
+
+\subsection{Geometry and Parameterization}
+
+An axisymmetric converging-diverging geometry is assumed. The following geometric properties can be specified:
+
+\begin{itemize}
+\item nozzle length
+\item throat location
+\item inlet diameter
+\item diameter, $D(x)$
+\item wall thickness, $t(x)$
+\end{itemize}
+
+In addition, area $A(x)$ may also be specified, along with area ratios of inlet, outlet, and throat area, as necessary.
+
+\subsection{Model Inputs}
+
+The only required model inputs are:
+
+\begin{itemize}
+\item $T_t(0)$, stagnation temperature at inlet, used in $T_t(x)$ calculations
+\item $P_t(0)$, stagnation pressure at inlet, used in $P_t(x)$ calculations
+\item $T_{\infty}$, freestream temperature, used in thermal analysis
+%\item $P_{\infty}$, freestream static pressure
+\item $k_w$, thermal conductivity of wall material
+\item $h_{\infty}$, generalized heat transfer coefficient from outside nozzle wall to freestream
+\item properties of fluid in nozzle (may be temperature dependent)
+\item nozzle geometry
+\end{itemize}
+
+\subsection{Determination of Nozzle State}
+
+A quick analysis of the corresponding ideal nozzle (\textit{i.e.} adiabatic and frictionless) is made to determine whether there is a shock present in the nozzle. The current MATLAB implementation does not calculate heat transfer and friction effects with the presence of a shock in the nozzle. However, more likely than not, the nozzle will be designed/controlled to not have a shock under normal operating conditions. In these cases, as well as for subsonic flow, the method presented in the remainder of this report is valid.
+
+The ideal nozzle state is dependent on the pressure ratio $\sfrac{P_{t7}}{P_{\infty}}$ \cite{cantwell210}. With nozzle geometry given, the critical subsonic and supersonic Mach numbers ($M_{\textrm{sub/super}}^*$) can be determined from the area-Mach relation found in equation \ref{eq:area_mach_function}, where choking occurs at the nozzle throat. Then, the corresponding critical pressure ratio for each critical Mach number can be determined:
+
+\begin{equation}
+\left( \frac{P_t}{P} \right)_{\textrm{sub/super}}^* = \left( 1 + \frac{\gamma - 1}{2} \left(M_{\textrm{sub/super}}^*\right)^2 \right)^\frac{\gamma}{\gamma - 1}
+\end{equation}
+
+\begin{enumerate}
+\item Subsonic flow throughout nozzle \\ 
+
+\begin{equation*}
+1 < \frac{P_{t7}}{P_{\infty}} < \left( \frac{P_t}{P} \right)_{\textrm{sub}}^*
+\end{equation*}
+
+\item Shock in nozzle \\ 
+
+If $\sfrac{P_{t7}}{P_{\infty}}$ increases further, a shock appears in the nozzle downstream of the throat and moves towards the nozzle exit. Thus, a shock in the nozzle will occur when:
+
+\begin{equation*}
+\left( \frac{P_t}{P} \right)_{\textrm{sub}}^* < \frac{P_{t7}}{P_{\infty}} < \left( \frac{P_t}{P_{\infty}} \right)_{\textrm{normal shock at exit}}
+\end{equation*}
+
+\item Overexpanded flow \\
+
+\begin{equation*}
+\left( \frac{P_t}{P_{\infty}} \right)_{\textrm{normal shock at exit}} < \frac{P_{t7}}{P_{\infty}} < \left( \frac{P_t}{P} \right)_{\textrm{super}}^*
+\end{equation*}
+
+\item Fully expanded flow \\
+
+\begin{equation*}
+\frac{P_{t7}}{P_{\infty}} = \left( \frac{P_t}{P} \right)_{\textrm{sub}}^*
+\end{equation*}
+
+\item Underexpanded flow \\
+
+\begin{equation*}
+\frac{P_{t7}}{P_{\infty}} > \left( \frac{P_t}{P} \right)_{\textrm{sub}}^*
+\end{equation*}
+
+\end{enumerate}
+
+Once the state of the nozzle is determined (and if it does not have a shock), then the governing equation of motion below can be integrated numerically.
+
+\subsection{Governing Equation of Motion}
+
+Manipulating the quasi-1D area-averaged equations of motion with the absence of mass addition leads to the following differential form \cite{cantwell210}:
+
+\begin{equation}
+\label{eq:governingEom}
+\left(\frac{1-M^2}{2(1 + \frac{\gamma-1}{2} )M^2}\right) \frac{dM^2}{M^2} = \frac{-dA}{A} + \frac{\gamma M^2}{2} \left(\frac{4 C_f dx}{D}\right) + \left(\frac{1 + \gamma M^2}{2}\right) \frac{dT_t}{T_t}
+\end{equation}
+
+where all variables above, except for $\gamma$ are functions of $x$. Note that if $A(x)$, $C_f(x)$, $D(x)$, and $T_t(x)$ are specified for the nozzle, then equation (\ref{eq:governingEom}) can integrated numerically.
+
+\subsubsection{Solution of Governing Equation}
+
+\texttt{ode45} is used to integrate equation (\ref{eq:governingEom}) from the nozzle throat to the nozzle exit. Equation (\ref{eq:governingEom}) is modified to enable \texttt{ode45} to solve for $M^2$ from the nozzle throat to the nozzle inlet:
+
+\begin{equation}
+\label{eq:governingEomModified}
+-\left(\frac{1-M^2}{2(1 + \frac{\gamma-1}{2} )M^2}\right) \frac{dM^2}{M^2} = \frac{-dA}{A} + \frac{\gamma M^2}{2} \left(\frac{4 C_f dx}{D}\right) + \left(\frac{1 + \gamma M^2}{2}\right) \frac{dT_t}{T_t}
+\end{equation}
+
+The initial condition for each integration is $M^2 = 1$. \texttt{ode45} uses a 4th-order accurate Runge-Kutta method. Tolerances as low as $0.01$ were deemed of sufficient accuracy, and result in faster solution.
+
+\subsubsection{Calculation of Other Properties}
+Once $M(x)$ is known, $T(x)$ is easily calculated from the definition of stagnation temperature since $T_t(x)$ is specified. $P_t(x)$ is calculated using the following mass conservation formula between station $x$ and the inlet, where $P_t(0)$ is specified:
+
+\begin{equation}
+\label{eq:massConservation}
+\frac{P_t(x) A(x) f(M(x))}{\sqrt{T_t(x)}} = \frac{P_t(0) A(0) f(M(0))}{\sqrt{T_t(0)}}
+\end{equation}
+
+where $f(M)$ is defined as:
+
+\begin{equation}
+\label{eq:area_mach_function}
+f(M) = \frac{A^*}{A} = \left( \frac{\gamma + 1}{2} \right)^\frac{\gamma + 1}{2 (\gamma - 1)} \frac{M}{\left(1 + \frac{\gamma - 1}{2} M^2 \right)^\frac{\gamma + 1}{2 (\gamma - 1)}}
+\end{equation}
+
+$P(x)$ is then easily calculated from the definition of stagnation temperature, and $\rho$ is calculated from ideal gas law. $U$, $Re_x$, and any other flow properties are also easily calculated.
+
+\subsection{Heat Transfer Calculations}
+
+Heat transfer phenomena is modeled in the transverse direction only using thermal resistances. The model estimates convection and conduction from the nozzle fluid to the nozzle wall ($h_f$), conduction through the nozzle wall ($k_w$), and sums convection, conduction, and radiation effects from the exterior nozzle wall to the environment using a generalize heat transfer coefficient $h_{\infty}$. It is interesting to note, that so long as $h_{\infty} \gg 0$, it has little impact on the stagnation pressure and temperature ratios across the nozzle. However $h_{\infty}$ has a large impact on the wall temperature distribution. 
+
+Recall the definition of the dimensionless Stanton number:
+
+\begin{equation}
+\label{eq:stanton_number}
+St = \frac{Q_w}{ \rho U C_p (T_w - T_t)}
+\end{equation}
+
+where $T_t$ in this instance is the adiabatic wall recovery temperature, which is taken to be the nozzle flow stagnation temperature for a recovery factor of 1, and with $Pr = 1$.
+
+Note also that the change in enthalpy along the length of the nozzle can be written as:
+
+\begin{equation}
+\label{eq:change_in_stagnation_enthalpy}
+dh_t = \frac{Q_w \pi D dx}{\rho U A} = 4 C_p St (T_w - T_t) \frac{dx}{D}
+\end{equation}
+
+\subsubsection{Determination of $h_f$}
+
+Using Newton's Law of Cooling, which is closely linked to the definition of a convective thermal resistance, the heat flux $Q_w$ through the nozzle wall can also be written:
+
+\begin{equation}
+\label{eq:Qw_based_on_hf}
+Q_w = h_f (T_w - T_t)
+\end{equation}
+
+Solving equation \ref{eq:change_in_stagnation_enthalpy} for $Q_w$ and comparing with equation \label{eq:Qw_based_on_hf} gives the convective heat transfer coefficient $h_f$.
+
+\begin{equation}
+\label{eq:hf_in_terms_of_St}
+h_f = \rho U C_p St
+\end{equation}
+
+Lastly, the Chilton-Colburn analogy, a modified form of the Reynolds analogy, can be used to estimate $St$ in terms of the friction coefficient $C_f$:
+
+\begin{equation}
+\label{eq:chilton_colburn_analogy}
+St = \frac{1}{2} Pr^{\frac{2}{3}} C_f
+\end{equation}
+
+Thus, the convective heat transfer coefficient $h_f$ can be written as:
+
+\begin{equation}
+\label{eq:hf_in_terms_of_Cf}
+h_f = \frac{1}{2} \rho U C_p Pr^{\frac{2}{3}} C_f
+\end{equation}
+
+\subsubsection{Determination of Heat Flux $Q_w$ and Stagnation Temperature $T_t$}
+
+Using the method of thermal resistances, the following equation can be written:
+
+\begin{equation}
+Q_w A = \frac{\Delta T}{R_{total}} = \frac{T_{\infty} - T_t}{\frac{1}{h_f A} + \frac{t}{k_w A} + \frac{1}{h_{\infty} A}}
+\end{equation}
+
+Assuming the area $A$ is approximately the same corresponding to each thermal resistance, the simplification is obtained:
+
+\begin{equation}
+\label{eq:heat_flux}
+Q_w = \frac{T_{\infty} - T_t}{\frac{1}{h_f} + \frac{t}{k_w} + \frac{1}{h_{\infty}}} = \frac{T_{\infty} - T_t}{R'_{tot}}
+\end{equation}
+
+Using the equation for change in stagnation enthalpy (equation \ref{eq:change_in_stagnation_enthalpy}) and noting that $dh_t = C_p dT_t$, the following equation for change in stagnation temperature can be written:
+
+\begin{equation}
+\label{eq:dTt_dx_definition}
+\frac{dT_t}{dx} = \left( \frac{T_{\infty} - T_t}{R'_{tot}} \right) \frac{4}{C_p \rho U D}
+\end{equation}
+
+Integrating equation \ref{eq:dTt_dx_definition} yields the following result for stagnation temperature along the nozzle:
+
+\begin{equation}
+T_t = T_{\infty} (1 - e^{\alpha}) + T_t(0) e^{\alpha}
+\end{equation}
+
+where
+
+\begin{equation*}
+\alpha = - \int_0^x \frac{4}{C_p \rho U D R'_{tot}} dx'
+\end{equation*}
+
+The integration for $\alpha$ can be carried out numerically, and thus $T_t$ can be determined. Once $T_t$ is known, $\frac{dT_t}{dx}$ can be determined from equation \ref{eq:dTt_dx_definition}. Finally, $Q_w$ may be determined from equation \ref{eq:heat_flux}. 
+
+\subsubsection{Determination of Wall Temperatures}
+
+Calculating the wall temperature is now trivial given the heat flux and thermal resistances. Using the method of thermal resistances, the interior nozzle wall temperature can be calculated as:
+
+\begin{equation}
+T_w = T_t + \frac{Q_w}{h_f}
+\end{equation}
+
+The exterior wall temperature can be calculated as:
+
+\begin{equation}
+T_{ext} = T_{\infty} - \frac{Q_w}{h_{\infty}}
+\end{equation}
+
+\subsection{$C_f$ Calculation}
+
+Sommer and Short's modified $T'$ method is used to determine $C_f$ \cite{Sommer1955}. The method in short is:
+
+\begin{enumerate}
+\item Evaluate
+
+\begin{equation}
+\frac{T'}{T_f} = 1 + 0.035 M_f^2 + 0.45 \left( \frac{T_w}{T_f} - 1 \right)
+\end{equation}
+
+\item Evaluate
+
+\begin{equation}
+\frac{Re'}{Re_f} = \frac{1}{\left(\frac{T'}{T_f}\right) \left(\frac{\mu'}{\mu_f}\right)}
+\end{equation}
+
+where Sutherland's law is used to calculate the dynamic viscosity ratio:
+
+\begin{equation}
+\frac{\mu'}{\mu_f} = \left(\frac{T'}{T_f}\right)^{1.5} \left( \frac{T_f + S}{T' + S} \right) = \left(\frac{T'}{T_f}\right)^{1.5} \left( \frac{1 + \sfrac{S}{T_f}}{\sfrac{T'}{T_f} + \sfrac{S}{T_f}} \right)
+\end{equation}
+
+where $S = 216 ^{\circ} \textrm{R} = 110.4 \textrm{ K}$
+
+\item Evaluate the incompressible skin friction coefficient, $C_{fi}$
+
+\begin{equation}
+C_{fi} = \frac{0.074}{Re^{0.2}}
+\end{equation}
+
+\item Calculate $C_f$
+
+\begin{equation}
+\frac{C_f}{C_{fi}} = \frac{T_f}{T'} \left( \frac{Re_f}{Re'} \right)^{0.2}
+\end{equation}
+
+\end{enumerate}
+
+\subsection{Thermofluid Coupling}
+
+Since, the calculation of the Mach number $M$ depends on the prescribed stagnation temperature and friction coefficient profile along the length of the nozzle, several iterations must be made to converge the calculation. Convergence is achieved when the change in static temperature at the outlet of the nozzle is less than a specified value; for speed this was chosen to be 5\%. Usually 7 iterations or less is sufficient.
+
+\subsection{Structural Model}
+
+A very simple structural model is used, based on the hoop stress calculated from the internal nozzle pressure at each station $x$. 
+
+\begin{equation}
+\sigma (x) = \frac{P(x) D(x)}{2 t(x)}
+\end{equation}
+
+\bibliographystyle{aiaa}
+\bibliography{C:/Users/Rick/Documents/Research/Literature/_data/14841B728B6EQ6VPY20H6P53KEBGWMT72EX1/default_files/LiteratureRefs}
+
+\end{document}
