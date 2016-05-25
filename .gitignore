@@ -35,3 +35,9 @@ local/
 *.geo
 *.mesh
 *.su2
+
+# Ignore tex files
+*.aux
+*.bbl
+*.blg
+*.log
