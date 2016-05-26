@@ -288,17 +288,6 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
 
     % --- Calculate cycles to failure Nf
     nozzle.Nf = estimateNf(nozzle.wall.Tinside,nozzle.stress.maxPrincipal,1);
-
-    % --- Calc nozzle material volume
-    % Volume calculation only works for spline parameterized nozzle geometry
-    % and piecewise-linear parameterized nozzle wall thickness
-    if(exist('pp','var')) % Exact volume for cubic spline parameterization
-        nozzle.geometry.volume = wallVolume(pp,nozzle.wall);
-    else % Approximate volume using trapezoidal integration
-        xVolume = linspace(0,nozzle.geometry.length,500)';
-        volumeIntegrand = pi*D(xVolume).*t(xVolume) + pi*t(xVolume).^2;
-        nozzle.geometry.volume = (xVolume(2)-xVolume(1))*trapz(volumeIntegrand);
-    end
 	  
 	%fprintf('\n -- Info: CFD results (averaged values at nozzle exit)\n');
 	%fprintf('           Mach   = %f\n', nozzle.exit.M );

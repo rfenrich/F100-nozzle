@@ -1,0 +1,177 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{xfrac}
+\usepackage{bbm}
+\usepackage{multicol}
+\usepackage{geometry}
+\usepackage{multirow}
+\usepackage{lscape}
+\geometry{margin=1in}
+
+\providecommand{\e}[1]{\ensuremath{\times 10^{#1}}}
+
+\title{Variables for F100-PW-220 Engine Model}
+\author{Richard W. Fenrich\\Department of Aeronautics and Astronautics\\Stanford University, Stanford, CA\\rfenrich@stanford.edu}
+\date{October 27, 2015}
+
+\begin{document}
+
+\maketitle
+
+\section{Purpose}
+This document summarizes the common input design variables for the F100-PW-220 engine model (\texttt{turbofanF100.m}), and the associated nozzle model (\texttt{nozzleNonIdeal.m}). It provides design variable ranges, as well as the reasons for the chosen ranges. 
+
+\section{Design Variables}
+
+Design variables and their ranges are discussed separately for those used in the nozzle design problem, and those used in the combined engine and nozzle design problem.
+
+\subsection{Common Nozzle Model Variables}
+
+The nozzle model can be run independently of the engine model if provided with the necessary nozzle conditions. There are minor interactions between the engine and the nozzle models; however these can be neglected at first to simplify the problem. Table \ref{tab:nozzleInletParameters} summarizes the necessary nozzle inlet parameters at the several altitude and mach combinations on which we will be focusing for now.
+
+\begin{table}
+\caption{Nozzle inlet stagnation pressure and temperature at several altitude-Mach combinations}
+\label{tab:nozzleInletParameters}
+\begin{center}
+\begin{tabular}[]{c | c | c | c}
+Altitude (thousands of ft) & Mach & Inlet stagnation pressure (Pa) & Inlet stagnation temperature (K) \\ \hline
+0 & 0 & 311,715.9 & 819.17 \\
+35 & 0.9 & 143,004.4 & 980.36 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+Variables in the nozzle design problem include those related to geometry, material, inputs, and the environment. A brief description of the parameterizations found in the \texttt{nonIdealNozzle.m} function follow:
+
+\begin{description}
+\item[Interior geometry] The nozzle geometry (\textit{i.e.} the diameter of the interior of the nozzle wall) is parameterized using a cubic spline. The user can choose the location of spline control points (two of which must be at the inlet and outlet), and slope of the spline segments at the inlet and outlet. Inlet diameter and nozzle length must also be specified. Additional geometry such as nozzle area ratios (inlet to throat to outlet) and axial position of the nozzle throat can be used for seeding the initial spline-parameterized geometry. For example, instead of providing a list of coordinates to specify control points, the user can specify a seed as \texttt{`linear'}, from which coordinates will be extracted based on the linear converging-diverging nozzle shape. Note that the location of the throat is not guaranteed to be the same after parameterizing with a spline, although the program accounts for this.
+\item[Wall geometry] The thickness of the nozzle wall (\textit{i.e.} the vertical distance between the interior and exterior of the wall, not necessarily the normal distance) is parameterized using a piecewise linear function. The user can specify control points, two of which must be at the inlet and outlet. The addition of the spline nozzle geometry with the piecewise linear thickness geometry gives the exterior geometry of the nozzle wall.
+\item[Materials] The nozzle is assumed to be manufactured from an isotropic material where heat transfer only takes place in the vertical direction through the nozzle wall. The thermal conductivity of the wall must be specified by the user for heat transfer purposes (currently, this is assumed independent of temperature). In the future when thermal stresses are taken into account, the elastic modulus must also be specified. Material constraints will be dependent upon the material's maximum service temperature or glass transition temperature, the material's yield stress, and the material's fatigue properties. A simplified hoop stress analysis is used to estimate some internal stresses.
+\item[Inputs] The user must prescribe a nozzle inlet stagnation temperature and pressure, which are derived from the engine model operating at a given altitude and speed (see Table \ref{tab:nozzleInletParameters}).
+\item[Environment] The user must specify the heat transfer coefficient from the nozzle exterior wall to the ambient. In addition, the operating altitude and speed determine the freestream static pressure and temperature, which are used in determining some nozzle temperatures.
+\end{description}
+
+Table \ref{tab:nozzleRanges} summarizes the ranges and nominal values of some of the available design variables for the nozzle design problem.
+
+\begin{landscape}
+
+\begin{table}
+\caption{Ranges for nozzle design variables}
+\label{tab:nozzleRanges}
+\begin{center}
+\begin{tabular}[]{p{4cm} | c | c | c | c}
+Parameter & Variable & Minimum & Nominal & Maximum \\
+\hline
+Altitude & \texttt{altitude} & N/A &  & N/A \\ \hline
+Inlet stagnation temperature & \texttt{nozzle.inlet.Tstag} & -5\% &  & +5\% \\ \hline
+Inlet stagnation pressure & \texttt{nozzle.inlet.Pstag} & -5\% &  & +5\% \\ \hline
+Heat transfer coefficient from exterior of nozzle wall to ambient & \texttt{nozzle.hInf} & 200 & 500 & 1000 \\ \hline
+Nozzle wall thermal conductivity & \texttt{nozzle.wall.k} & 27 & 30 & 33 \\ \hline
+Inlet diameter & \texttt{nozzle.inlet.D} & 0.618 & 0.651 & 0.684 \\ \hline
+Inlet area to throat area ratio & \texttt{nozzle.geometry.Ainlet2Athroat} & 1.300 & 1.368 & 1.436 \\ \hline
+Exit area to throat area ratio & \texttt{nozzle.geometry.Aexit2Athroat} & 1.33 & 1.4 & 1.47 \\ \hline
+Nozzle length & \texttt{nozzle.geometry.length} & 0.8 & 1 & 1.5 \\ \hline
+%Location of control points for nozzle spline geometry & \texttt{nozzle.geometry.spline.seed} and &  &  &  \\ 
+%& \texttt{nozzle.geometry.spline.breaks} &  &  &  \\ \hline
+Number of control points for nozzle spline geometry & length of \texttt{nozzle.geometry.spline.breaks} & 3 & 3 & very large \\ \hline
+Slopes of nozzle spline geometry at inlet and outlet & \texttt{nozzle.spline.slopes} & [0, 0] & [0, 0] & [0, 0.5] \\ \hline
+%Location of control points for nozzle wall piecewise linear geometry & \texttt{nozzle.wall.seed} and \texttt{nozzle.wall.breaks} &  &  &  \\ \hline
+Number of control points for nozzle wall piecewise linear geometry & length of \texttt{nozzle.geometry.spline.breaks} & 2 & 3 & very large \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\end{landscape}
+
+
+\begin{description}
+\item[Altitude] Deterministic variable used to determine atmospheric temperature and pressure, in turn affecting the nozzle inlet stagnation temperature and pressure, and heat transfer.
+\item[Inlet stagnation temperature] Calculated from the engine model. Range of +/- 5\% is assumed.
+\item[Inlet stagnation pressure] Calculated from the engine model. Range of +/- 5\% is assumed.
+\item[Heat transfer coefficient from exterior of nozzle wall to ambient] A very uncertain variable since no heat transfer analysis combining the nozzle, airframe, and surrounding environment has been made. Nominal value and range taken from engineering intuition.
+\item[Nozzle wall thermal conductivity] Nominal value taken from generic composite material. Range of +/- 10\% is assumed.
+\item[Inlet diameter] Nominal value measured from drawing.  Range of +/- 5\% is assumed.
+\item[Inlet area to throat area ratio] Nominal value measured from drawing.  Range of +/- 5\% is assumed.
+\item[Exit area to throat area ratio] Nominal value measured from drawing.  Range of +/- 5\% is assumed.
+\item[Nozzle length] Nominal value measured from drawing.
+%\item[Location of control points for nozzle spline geometry]
+%\item[Number of control points for nozzle spline geometry]
+%\item[Slopes of nozzle spline geometry at inlet and outlet]
+%\item[Location of control points for nozzle wall piecewise linear geometry]
+%\item[Number of control points for nozzle wall piecewise linear geometry]
+\end{description}
+
+
+\subsection{Common Engine Model Variables}
+
+In addition to the common engine model variables, the engine and nozzle models can be run at a variety of altitudes and Mach numbers. However, certain combinations of altitude and Mach number lead to off-design conditions, which are not take into consideration with the model. To ensure that calculations are performed within a feasible design space with the range of variables given in Table \ref{tab:engineRanges}, ensure that for a given altitude, the chosen Mach number is above the minimum Mach number in Table \ref{tab:altitudeMach}.
+
+\begin{table}
+\caption{Minimum Mach number for a given altitude}
+\label{tab:altitudeMach}
+\begin{center}
+\begin{tabular}[]{c | c }
+Altitude (thousands of ft) & Minimum Mach \\ \hline
+0 & 0 \\
+10 & 0 \\
+15 & 0.25 \\
+20 & 0.42 \\
+25 & 0.54 \\
+30 & 0.63 \\
+35 & 0.7 \\
+40 & 0.72 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}
+\caption{Ranges for engine design variables}
+\label{tab:engineRanges}
+\begin{center}
+\begin{tabular}[]{c | c | c | c | c}
+Parameter & Variable (\texttt{control.xxx})& Minimum & Nominal & Maximum \\
+\hline
+Bypass ratio & \texttt{bypassRatio} & 0.59 & 0.62 & 0.64 \\
+Fan stag. pressure ratio & \texttt{fan.PstagRatio} & 2.99 & 3.06 & 3.14 \\
+Fan polytropic efficiency & \texttt{fan.efficiency.polytropic} & 0.82 & 0.84 & 0.86 \\
+Compressor overall pressure ratio & \texttt{compressor.overallPressureRatio} & 24 & 24.5 & 25 \\
+Compressor polytropic efficiency & \texttt{compressor.efficiency.polytropic} & 0.84 & 0.87 & 0.9 \\
+Burner stag. pressure ratio & \texttt{burner.PstagRatio} & 0.92 & 0.95 & 0.98 \\
+Burner efficiency & \texttt{burner.efficiency} & 0.94 & 0.95 & 0.99 \\
+Turbine polytropic efficiency & \texttt{turbine.efficiency.polytropic} & 0.83 & 0.85 & 0.89 \\
+Turbine shaft efficiency & \texttt{turbine.efficiency.shaft} & 0.95 & 0.97 & 0.99 \\
+Bypass area to core area ratio & \texttt{nozzle.inlet.Abypass2Acore} & 0.38 & 0.4 & 0.42 \\
+Nozzle inlet diameter & \texttt{nozzle.inlet.D} & & 0.651 & \\
+Nozzle inlet to throat area ratio & \texttt{geometry.Ainlet2Athroat} & & 1.368 & \\
+Nozzle exit to throat area ratio & \texttt{geometry.Aexit2Athroat} & & 1.4 & \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{description}
+\item[Bypass ratio] Nominal value is well agreed upon in literature (Camm, Jane's, Allstar). Nominal value is taken to be rounded average of 2 values found. Range spans a little less than 10\% of nominal value.
+\item[Fan stag. pressure ratio] Nominal value is cited by trustworthy source (Jane's Aero Engines). Stated range spans 5\% of nominal value.
+\item[Fan polytropic efficiency] Typical range for this efficiency based on Lee's paper.
+\item[Compressor overall pressure ratio] Nominal value taken from Jane's. All values quoted in literature span the given range.
+\item[Compressor polytropic efficiency] Typical range for this efficiency based on Lee's paper.
+\item[Burner stag. pressure ratio] Typical range for this efficiency based on Lee's paper.
+\item[Burner efficiency] Typical range for this efficiency based on Lee's paper. Nominal value chosen so deterministic static sea level thrust better matches experimental data in literature.
+\item[Turbine polytropic efficiency] Typical range for this efficiency based on Lee's paper. Nominal value chosen so deterministic static sea level thrust better matches experimental data in literature.
+\item[Turbine shaft efficiency] Typical range for this efficiency based on Lee's paper.
+\item[Bypass area to core area ratio] Minimum value set so that supersonic flow does not occur in the bypass duct anywhere in the X-47B's estimated operating envelope. Max value chosen to give a 10\% range (rounded up). This variable is only used when the fan bypass and turbine core air flows are area-averaged, which is a design choice leading to greater model form uncertainty. Thus, there is a certain nebulousness to this variable, firstly, because it represents a ratio that is not known (and can only be estimated from non-technical drawings) and secondly, because it is used as an input only for a very simple modeling approximation. Note that, were this engine being designed in house, its value would be pinpointed with much greater accuracy. As such, the lowest reasonable range which will not cause supersonic flow in the bypass duct has been assumed.
+\item[Nozzle inlet diameter] Assumed to be deterministic. Nominal value measured from a Pratt \& Whitney non-technical drawing and adjusted for decent matching with static sea level thrust experimental data.
+\item[Nozzle inlet to throat area ratio] Assumed to be deterministic. Nominal value estimated from a Pratt \& Whitney non-technical drawing and adjusted for decent matching with static sea level thrust experimental data.
+\item[Nozzle exit to throat area ratio] Assumed to be deterministic. Nominal value estimated from a Pratt \& Whitney non-technical drawing and adjusted for decent matching with static sea level thrust experimental data.
+\end{description}
+
+\subsubsection{Notes}
+
+\begin{description}
+\item[Supersonic flow in bypass duct] Concerning supersonic flow in the fan bypass duct, the most critical combination of variables has been found to be an engine model with maximum bypass ratio, maximum fan, compressor, and turbine polytropic efficiencies, maximum turbine shaft efficiency, minimum fan stagnation pressure ratio, maximum burner stagnation pressure ratio, and of course, minimum bypass to core area ratio. At these conditions, with the ranges given above, very high subsonic flow is present in the fan bypass duct. (10/21/15)
+\end{description}
+
+\bibliographystyle{aiaa}
+\bibliography{C:/Users/Rick/Documents/Research/Literature/_data/14841B728B6EQ6VPY20H6P53KEBGWMT72EX1/default_files/LiteratureRefs}
+
+\end{document}

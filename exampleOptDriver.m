@@ -31,9 +31,8 @@
 clear all; close all; clc;
 
 fidelity = 'med'; % 'low' or 'med'
-%F100dir = '/home/rick/Documents/Research/F100-nozzle'; % directory of F100-nozzle code
-F100dir = '/farmshare/user_data/rfenrich/F100-nozzle';
-addpath(F100dir);
+F100dir = '/home/rick/Documents/Research/F100-nozzle'; % directory of F100-nozzle code
+saveDir = 'results.out'; % data for each function evaluation
 
 % Set up initial B-spline shape
 Dinlet = 0.3255*2;
@@ -138,12 +137,20 @@ fprintf('Number design variables: %i\n',n);
 
 objFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'volume');
 
-figure;
-hold on;
+%figure;
+%hold on;
 tic;
 [sol,val] = fmincon(objFun,x,A,b,[],[],lb,ub,nonlconFun,options);
 timeToEnd = toc;
 fprintf('Time to completion: %0.2f sec\n',timeToEnd);
+
+% Output final data
+Tfinal = nonlconFun(sol);
+fid = fopen(saveDir);
+fprintf(fid,'Volume: %f\n',val);
+fprintf(fid,'Constraint: %f\n',Tfinal);
+fprintf(fid,sol);
+fclose(fid);
 
 % nozzle = exampleWrapper(x,knots,coefs,fidelity,'all',F100dir);
 

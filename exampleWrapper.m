@@ -112,7 +112,14 @@ nozzle.wall.breaks = [0;
 fluid.gam = 1.4; % ratio of specific heats
 fluid.R = 287.06; % J/kg-K, specific gas constant
 
-% ====================== RUN NOZZLE CALCULATIONS =========================
+% ==================== RETURN VOLUME IF REQUESTED ========================
+if( strcmp(output,'volume') )
+    volume = wallVolume(knots,coefs,nozzle.wall,'B-spline');
+    varargout = {volume};
+    return;
+end
+
+% ================= OTHERWISE RUN NOZZLE CALCULATIONS ====================
 
 % ----------------- CALCULATE FREESTREAM PROPERTIES ----------------------
 atm = StndAtm(altitude*0.3048,'SI'); % obtain standard atmosphere characteristics
@@ -123,9 +130,6 @@ freestream.U = freestream.M*sqrt(fluid.gam*fluid.R*freestream.T);
 
 if( strcmp(fidelity,'low') )
     [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, err );  
-elseif( strcmp(fidelity,'med') && strcmp(output,'volume') ) % run cheap computation
-    % Volume can be calculated without running CFD
-    [ nozzle ] = nozzleNonIdeal( fluid, freestream, nozzle, err );
 elseif( strcmp(fidelity,'med') )
     nozzle.meshSize  = 'coarse'; % 'coarse', 'medium', or 'fine'
     nozzle.governing = 'euler'; % 'euler' or 'rans'
@@ -180,13 +184,6 @@ if (strcmp(output,'nonlcon')) % nonlinear constraint functions for this case
     
     varargout = {C Ceq}; % required return format by fmincon
 
-elseif (strcmp(output,'volume')) % objective function for this case
-    if(isfloat(nozzle.geometry.volume) && nozzle.geometry.volume > 0)
-        varargout = {nozzle.geometry.volume};
-    else
-        fprintf('! Volume is not a positive float.\n')
-        varargout = {0};
-    end
 else % output everything
     varargout = {nozzle};
 end
