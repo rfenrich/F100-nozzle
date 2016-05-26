@@ -122,7 +122,7 @@ else
 end
 
 % Set nonlinear inequality constraint function
-nonlconFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'nonlcon',F100dir);
+nonlconFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'nonlcon');
 
 % Set optimization options
 options.MaxIter = 50;
@@ -135,7 +135,7 @@ options.UseParallel = true; % estimate finite difference gradients in parallel
 % Print data to screen
 fprintf('Number design variables: %i\n',n);
 
-objFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'volume',F100dir);
+objFun = @(r) exampleWrapper(r,knots,coefs,fidelity,'volume');
 
 %figure;
 %hold on;

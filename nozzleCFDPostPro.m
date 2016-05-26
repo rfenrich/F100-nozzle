@@ -289,13 +289,13 @@ function [nozzle] = nozzleCFDPostPro(meshSU2, Sol, nozzle, fluid, freestream)
     % --- Calculate cycles to failure Nf
     nozzle.Nf = estimateNf(nozzle.wall.Tinside,nozzle.stress.maxPrincipal,1);
 	  
-	fprintf('\n -- Info: CFD results (averaged values at nozzle exit)\n');
-	fprintf('           Mach   = %f\n', nozzle.exit.M );
-	fprintf('           Temp   = %f K\n', nozzle.exit.T );
-	fprintf('           Vel    = %f m/s\n', nozzle.exit.U );
-	fprintf('           Pres   = %f Pa\n', nozzle.exit.P );
-	fprintf('           Thrust = %f N\n', nozzle.netThrust );
-	fprintf('           Pstag  = %f N\n', PstagExitAverage );
-	fprintf('           Tstag  = %f N\n', TstagExitAverage );
+	%fprintf('\n -- Info: CFD results (averaged values at nozzle exit)\n');
+	%fprintf('           Mach   = %f\n', nozzle.exit.M );
+	%fprintf('           Temp   = %f K\n', nozzle.exit.T );
+	%fprintf('           Vel    = %f m/s\n', nozzle.exit.U );
+	%fprintf('           Pres   = %f Pa\n', nozzle.exit.P );
+	%fprintf('           Thrust = %f N\n', nozzle.netThrust );
+	%fprintf('           Pstag  = %f N\n', PstagExitAverage );
+	%fprintf('           Tstag  = %f N\n', TstagExitAverage );
 	
 end

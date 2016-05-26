@@ -48,8 +48,34 @@ function [meshGMF] = meshPrepro(meshGMF)
 	
 	%--- Remove edges of ref 11 (internal edges used for postprocessing)
 	
-	idx=find(meshGMF.Efr(:,3)~=11);
-	meshGMF.Efr = meshGMF.Efr(idx,:);
-	meshGMF.NbrEfr = size(idx,1);
+	%idx=find(meshGMF.Efr(:,3)~=11);
+	%meshGMF.Efr = meshGMF.Efr(idx,:);
+	%meshGMF.NbrEfr = size(idx,1);
+	
+	%--- Change refs
+	
+	idx=find(meshGMF.Efr(:,3)==4 | meshGMF.Efr(:,3)==5 );
+	meshGMF.Efr(idx,3) = 3 ;
+	
+	idx=find(meshGMF.Efr(:,3)==6 );
+	meshGMF.Efr(idx,3) = 4 ;
+	
+	idx=find(meshGMF.Efr(:,3)==7 | meshGMF.Efr(:,3)==8 );
+	meshGMF.Efr(idx,3) = 5;
+	
+	idx=find(meshGMF.Efr(:,3) == 9 );
+	meshGMF.Efr(idx,3) = 6;
+	
+	idx=find(meshGMF.Efr(:,3) == 10);
+	meshGMF.Efr(idx,3) = 7;
+	
+	idx=find(meshGMF.Efr(:,3)==11);
+	meshGMF.Efr(idx,3) = 8;
+	
+	idx=find(meshGMF.Efr(:,3)==12);
+	meshGMF.Efr(idx,3) = 9;
+	
+	idx=find(meshGMF.Efr(:,3)==13);
+	meshGMF.Efr(idx,3) = 10;
 	
 end
