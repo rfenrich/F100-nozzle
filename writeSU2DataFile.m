@@ -18,7 +18,7 @@ function [] = writeSU2DataFile ( nozzle )
 	elseif ( safeMode )
 		nozzle.NbrIte = 350;
 	else 
-		nozzle.NbrIte = 250;
+		nozzle.NbrIte = 500;
 	end
 	
   fprintf('	-- Writing SU2 datafile axinoz.cfg\n')
@@ -142,7 +142,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Adaptive CFL number (NO, YES)                                                   \n');
   fprintf(DatOut,' CFL_ADAPT= NO                                                                    \n');
-  fprintf(DatOut,'%%                                                                                 \n');
+  fprintf(DatOut,'MAX_DELTA_TIME= 1E6                                                                                     \n');
   fprintf(DatOut,'%% Parameters of the adaptive CFL number (factor down, factor up, CFL min value,   \n');
   fprintf(DatOut,'%%                                        CFL max value )                          \n');
   fprintf(DatOut,' CFL_ADAPT_PARAM= ( 1.5, 0.5, 1.0, 100.0 )                                         \n');
@@ -160,19 +160,19 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' LINEAR_SOLVER_ERROR= 1E-6                                                         \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Max number of iterations of the linear solver for the implicit formulation      \n');
-  fprintf(DatOut,' LINEAR_SOLVER_ITER= 20                                                             \n');
+  fprintf(DatOut,' LINEAR_SOLVER_ITER= 3                                                             \n');
   fprintf(DatOut,'                                                                                    \n');
   fprintf(DatOut,'%% ----------------------- SLOPE LIMITER DEFINITION ----------------------------%%  \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Reference element length for computing the slope and sharp edges limiters.      \n');
-  fprintf(DatOut,' REF_ELEM_LENGTH= 0.1                                                              \n');
+  fprintf(DatOut,' REF_ELEM_LENGTH= 0.005                                                              \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Coefficient for the limiter                                                     \n');
   fprintf(DatOut,' LIMITER_COEFF= 0.3                                                                \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Coefficient for the sharp edges limiter                                         \n');
   fprintf(DatOut,' SHARP_EDGES_COEFF= 3.0                                                            \n');
-  fprintf(DatOut,'%%                                                                                 \n');
+  fprintf(DatOut,'LIMITER_ITER= 100                                                                                \n');
   fprintf(DatOut,'%% Reference coefficient (sensitivity) for detecting sharp edges.                  \n');
   fprintf(DatOut,' REF_SHARP_EDGES= 3.0                                                              \n');
   fprintf(DatOut,'%%                                                                                 \n');
@@ -206,6 +206,16 @@ function [] = writeSU2DataFile ( nozzle )
   	fprintf(DatOut,'                                                                                   \n');
 	end
 	
+	
+	fprintf(DatOut,'%% -------------------------- MULTIGRID PARAMETERS -----------------------------%%\n');
+	fprintf(DatOut,'MGLEVEL= 3                                                                       \n');
+	fprintf(DatOut,'MGCYCLE= V_CYCLE                                                                 \n');
+	fprintf(DatOut,'%%MG_PRE_SMOOTH= ( 1, 2, 3, 3 )                                                  \n');
+	fprintf(DatOut,'MG_POST_SMOOTH= ( 0, 0, 0, 0 )                                                   \n');
+	fprintf(DatOut,'MG_CORRECTION_SMOOTH= ( 0, 0, 0, 0 )                                             \n');
+	fprintf(DatOut,'MG_DAMP_RESTRICTION= 0.75                                                        \n');
+	fprintf(DatOut,'MG_DAMP_PROLONGATION= 0.75                                                       \n');
+	
   fprintf(DatOut,'%% -------------------- FLOW NUMERICAL METHOD DEFINITION -----------------------%% \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Convective numerical method (JST, LAX-FRIEDRICH, CUSP, ROE, AUSM, HLLC,         \n');
@@ -220,7 +230,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' SLOPE_LIMITER_FLOW= VENKATAKRISHNAN                                               \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% 1st, 2nd and 4th order artificial dissipation coefficients                      \n');
-  fprintf(DatOut,' AD_COEFF_FLOW= ( 0.15, 0.5, 0.03 )                                                \n');
+  fprintf(DatOut,' AD_COEFF_FLOW= ( 0.15, 0.5, 0.05 )                                                \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Time discretization (RUNGE-KUTTA_EXPLICIT, EULER_IMPLICIT, EULER_EXPLICIT)      \n');
   fprintf(DatOut,' TIME_DISCRE_FLOW= EULER_IMPLICIT                                                  \n');
@@ -245,7 +255,7 @@ function [] = writeSU2DataFile ( nozzle )
   fprintf(DatOut,' CONV_CRITERIA= RESIDUAL                                                           \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Residual reduction (order of magnitude with respect to the initial value)       \n');
-  fprintf(DatOut,' RESIDUAL_REDUCTION= 8                                                             \n');
+  fprintf(DatOut,' RESIDUAL_REDUCTION= 3                                                             \n');
   fprintf(DatOut,'%%                                                                                 \n');
   fprintf(DatOut,'%% Min value of the residual (log10 of the residual)                               \n');
   fprintf(DatOut,' RESIDUAL_MINVAL= -12                                                              \n');
