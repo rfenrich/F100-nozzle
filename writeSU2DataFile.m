@@ -210,7 +210,7 @@ function [] = writeSU2DataFile ( nozzle )
 	fprintf(DatOut,'%% -------------------------- MULTIGRID PARAMETERS -----------------------------%%\n');
 	fprintf(DatOut,'MGLEVEL= 3                                                                       \n');
 	fprintf(DatOut,'MGCYCLE= V_CYCLE                                                                 \n');
-	fprintf(DatOut,'%%MG_PRE_SMOOTH= ( 1, 2, 3, 3 )                                                  \n');
+	fprintf(DatOut,'MG_PRE_SMOOTH= ( 1, 2, 3, 3 )                                                  \n');
 	fprintf(DatOut,'MG_POST_SMOOTH= ( 0, 0, 0, 0 )                                                   \n');
 	fprintf(DatOut,'MG_CORRECTION_SMOOTH= ( 0, 0, 0, 0 )                                             \n');
 	fprintf(DatOut,'MG_DAMP_RESTRICTION= 0.75                                                        \n');
