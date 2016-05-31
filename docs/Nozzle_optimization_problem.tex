@@ -304,7 +304,7 @@ where $x = \irow{w}$. The optimization was performed for mission 3, \textit{i.e}
 \end{center}
 \end{figure}
 
-The optimization converged in 68 minutes, 1012 function evaluations, and 25 major iterations with the termination message ``current point cannot be improved upon.'' Figure \ref{fig:minWeightLofiSimpleResults} compares the initial and final design. The optimal weight is 9,878 $\textrm{cm}^3$. The thrust constraint is tight, and 5 control points are pushed to their x-coordinate limits. Other tight linear constraints include the min/max slope constraints near the inlet and outlet of the nozzle, some throat remains the lowest point constraints, and a few relative x-position constraints.
+The optimization converged in 68 minutes, 1012 function evaluations (including gradients), and 25 major iterations with the termination message ``current point cannot be improved upon'' since the norm of the residuals of the active constraints is only at $4.0e-5$. The norm of the reduced gradient is small enough ($2.9e-8$) at the optimum. Figure \ref{fig:minWeightLofiSimpleResults} compares the initial and final design. The optimal weight is 9,878 $\textrm{cm}^3$. The thrust constraint is tight, and 5 control points are pushed to their x-coordinate limits. Other tight linear constraints include the min/max slope constraints near the inlet and outlet of the nozzle, some constraints requiring the throat to remain the lowest point, and a few relative x-position constraints. 2 design variables were limited by their lower bounds, one of which was the variable controlling the nozzle length. 3 design variables were limited by their upper bounds; all 3 controlled either the throat or neighboring control point's heights.
 
 \subsubsection{Simplified Minimum Weight, Med-fidelity Model}
 
@@ -318,7 +318,7 @@ The same optimization problem formulated in equation \ref{eq:minWeightLowFiSimpl
 \end{center}
 \end{figure}
 
-The optimization converged in 5.2 hours using fmincon's parallel mode and 12 processors with 31 total iterations. The optimization stopped since the relative maximum constraint violation was met (1e-6) and all changes in the design variables was less than the step tolerance (1e-6). The optimal weight is 9,199.08 $\textrm{cm}^3$. The optimal value of thrust was 25,012 N. 
+The optimization converged in 5.2 hours using fmincon's parallel mode and 12 processors with 31 total iterations and 794 function evaluations (including gradients). The optimization stopped since the relative maximum constraint violation was met (1e-6) and all changes in the design variables was less than the step tolerance (1e-6), although the first-order optimality measure only reached 1.135e-3. The optimal weight is 9,199.08 $\textrm{cm}^3$. The optimal value of thrust was 25,012 N. Tight linear constraints (to a tolerance of 1e-4) include 1 constraint requiring the throat to remain the lowest point and 2 min/max slope constraints. 7 design variables were within 1e-4 of their lower bound, namely the variables controlling the length of the nozzle, a y-coordinate prior to the throat, the throat height, and 4 control point y-coordinates in the post-nozzle section.
 
 \subsection{Stochastic}
 
@@ -352,10 +352,15 @@ where $x = \irow{c}$ and $\xi = \irow{ T_{stag} & P_{stag} & T_{\infty} & P_{\in
 \end{center}
 \end{figure}
 
-The optimization converged in about 30 minutes on 4 cores, 16 function evaluations, and 10 major iterations with the message ``current point cannot be improved upon.'' The optimal weight is 10,360.50 $\textrm{cm}^3$. The value of the thrust constraint at the optimum was 25,004.84 N. Other tight linear constraints included a cluster of 3 x-position constraints prior to the throat, 6 throat is lowest constraints, and 1 tight max slope constraint near the exit. In addition there are two extra constraints which are also active. These require the control points on either side of the throat to be close to the throat.
+The optimization stopped in about 30 minutes on 4 cores, 16 function evaluations, and 10 major iterations with the message ``current point cannot be improved upon,'' since a) the subproblem's sequence of iterates did not converge, b) the norm of the reduced gradient was not small enough (1.7e-4), and c) the norms of the residuals of the constraints were not small enough (4.8). The final weight is 10,360.50 $\textrm{cm}^3$. The value of the thrust constraint at the final iterate was 25,004.84 N. Other tight linear constraints included a cluster of 3 x-position constraints prior to the throat, 6 throat is lowest constraints, and 1 tight max slope constraint near the exit. In addition there are two extra constraints which are also active. These require the control points on either side of the throat to be close to the throat. 2 design variables reached their bounds, one of which was the design variable controlling the length of the nozzle (\textit{i.e.} lower-bound limited).
 
 \subsubsection{Control Variate Minimum Weight, Med-fidelity Model}
 
 Currently, there is difficulty in getting the optimization to converge while respecting the nonlinear thrust constraint.
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
