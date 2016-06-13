@@ -2,6 +2,8 @@
 
 \usepackage{amsmath}
 \usepackage{mdframed}
+%\usepackage{subfigure}
+\usepackage{subcaption}
 
 \newcommand{\irow}[1]{% inline row vector
   \begin{smallmatrix}[#1]\end{smallmatrix}%
@@ -308,7 +310,25 @@ The optimization converged in 68 minutes, 1012 function evaluations (including g
 
 \subsubsection{Simplified Minimum Weight, Med-fidelity Model}
 
-The same optimization problem formulated in equation \ref{eq:minWeightLowFiSimplified} was solved using the medium-fidelity model using Euler CFD. The implementation was in Matlab using fmincon's SQP implementation. The convergence tolerance was 1e-6 and a forward finite difference step size of 1e-3 was used. The optimization began from a slightly modified baseline geometry with completely feasible constraints. Figure \ref{fig:minWeightMedfiSimpleResults} compares the initial and final design.
+The same optimization problem formulated in equation \ref{eq:minWeightLowFiSimplified} was scaled and then solved using the medium-fidelity model using Euler CFD. The scaled optimization problem is:
+
+\begin{equation}
+\label{eq:minWeightMedFiScaled}
+%\mathbbm{P}_1 \begin{cases}
+\begin{aligned}
+& \underset{x}{\text{minimize}}
+% objective function:
+& & W(x)*100 \\
+& \text{subject to}
+% constraints:
+& & T(x)/25000 - 1 \geq 0 \\
+& & & A x \leq b \\
+& & & l \leq x \leq u \\
+\end{aligned}
+%\end{cases}
+\end{equation}
+
+The optimization was implemented using Matlab and SNOPT's simplified Matlab interface. SNOPT v7 was used with a major iteration feasibility tolerance of 1e-4, major iteration optimality tolerance of 1e-3, and function precision of 1e-6. Gradients were estimated via finite difference by the user in Matlab using an absolute step size of 1e-3 in order to take advantage of Matlab's parallel computing toolbox. The optimization began from a slightly modified baseline geometry with completely feasible constraints. Figure \ref{fig:minWeightMedfiSimpleResults} compares the initial and final design. In addition, figures \ref{fig:minWeightMedfiDetFlow} show the Euler flow calculation results for the final design. Note that the flow in the nozzle is quite smooth and there are no sudden expansions or shocks.
 
 \begin{figure}
 \caption{Comparison of initial design and optimal design using the med-fidelity Euler CFD calculations in SU2. Note that the shape of the nozzle is much more contoured than the low-fidelity result and a lower weight is achieved since there is favorable interaction between the geometry and the flow that results in higher thrust.}
@@ -318,7 +338,30 @@ The same optimization problem formulated in equation \ref{eq:minWeightLowFiSimpl
 \end{center}
 \end{figure}
 
-The optimization converged in 5.2 hours using fmincon's parallel mode and 12 processors with 31 total iterations and 794 function evaluations (including gradients). The optimization stopped since the relative maximum constraint violation was met (1e-6) and all changes in the design variables was less than the step tolerance (1e-6), although the first-order optimality measure only reached 1.135e-3. The optimal weight is 9,199.08 $\textrm{cm}^3$. The optimal value of thrust was 25,012 N. Tight linear constraints (to a tolerance of 1e-4) include 1 constraint requiring the throat to remain the lowest point and 2 min/max slope constraints. 7 design variables were within 1e-4 of their lower bound, namely the variables controlling the length of the nozzle, a y-coordinate prior to the throat, the throat height, and 4 control point y-coordinates in the post-nozzle section.
+\begin{figure}[t!]
+    \centering
+    \begin{subfigure}[t]{0.33\textwidth}
+        \centering
+        \includegraphics[width=0.85\linewidth]{figs/det_medfi_density.png}
+        \caption{Density.}
+    \end{subfigure}%
+    ~ 
+    \begin{subfigure}[t]{0.33\textwidth}
+        \centering
+        \includegraphics[width=0.85\linewidth]{figs/det_medfi_pressure.png}
+        \caption{Pressure.}
+    \end{subfigure}%
+    ~
+    \begin{subfigure}[t]{0.33\textwidth}
+        \centering
+        \includegraphics[width=0.85\linewidth]{figs/det_medfi_temp.png}
+        \caption{Temperature.}
+    \end{subfigure}
+    \caption{Nozzle flow calculated using the Euler equations at the optimal nozzle shape.}
+    \label{fig:minWeightMedfiDetFlow}
+\end{figure}
+
+The optimization converged in around 10 hours using 12 processors for the finite difference calculations with 15 total major iterations and 59 total function calls (excluding gradients). The optimization terminated with the message ``requested accuracy could not be achieved''. Although the final design is feasible and meets the primal feasibility tolerance, the final design has a maximum complementarity gap of 7e-3 which is larger than the prescribed optimality tolerance of 1e-3. The optimal weight is 9,251.83 $\textrm{cm}^3$. The unscaled thrust at the optimum is 25,019 N. There is one degenerate (\textit{i.e.} almost tight) linear constraint corresponding to a minimum slope constraint in the converging portion of the nozzle. The nonlinear thrust constraint is also degenerate. Several design variables have also almost reached their bounds: the variable controlling the length of the nozzle, the variable controlling the y-coordinate of the first design control point (reaches a lower bound), and the variable controlling the y-coordinate of the final design control point (reaches a lower bound).
 
 \subsection{Stochastic}
 
