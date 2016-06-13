@@ -507,30 +507,31 @@ function [xApparentThroat] = findApparentThroat(gam, nozzle, err, dAdx, A, Cf, D
     else
         [minVal,minInd] = min(A(xFind(signChangeLocations)));
         throatGuess = xFind(signChangeLocations(minInd));
-    end
     
-    % Check to make sure each following possible throat is far enough away
-    ind = signChangeLocations(minInd);
-    for ii = minInd+1:length(signChangeLocations)
-        
-        currentInd = signChangeLocations(ii);
-        dx = xFind(currentInd) - xFind(ind);
-        
-        dAdxbar = dAdx(xFind(ind));
-        dAdxbarEst = (A(xFind(currentInd)) - A(xFind(ind)))/dx;
-        
-        dTstagdxbar = dTstagdx(xFind(currentInd));
-        Abar = A(xFind(ind));
-        Tstagbar = Tstag(xFind(ind));
-        Cfbar = Cf(xFind(ind));
-        Dbar = D(xFind(ind));
-        
-        RHS = dTstagdxbar*Abar*(1+gam)/(2*Tstagbar) + 2*gam*Abar*Cfbar/Dbar;
-        
-        if( dAdxbarEst <= RHS )
-            throatGuess = xFind(currentInd);
+        % Check to make sure each following possible throat is far enough away
+        ind = signChangeLocations(minInd);
+        for ii = minInd+1:length(signChangeLocations)
+
+            currentInd = signChangeLocations(ii);
+            dx = xFind(currentInd) - xFind(ind);
+
+            dAdxbar = dAdx(xFind(ind));
+            dAdxbarEst = (A(xFind(currentInd)) - A(xFind(ind)))/dx;
+
+            dTstagdxbar = dTstagdx(xFind(currentInd));
+            Abar = A(xFind(ind));
+            Tstagbar = Tstag(xFind(ind));
+            Cfbar = Cf(xFind(ind));
+            Dbar = D(xFind(ind));
+
+            RHS = dTstagdxbar*Abar*(1+gam)/(2*Tstagbar) + 2*gam*Abar*Cfbar/Dbar;
+
+            if( dAdxbarEst <= RHS )
+                throatGuess = xFind(currentInd);
+            end
+
         end
-        
+    
     end
     
     %xApparentThroat = fzero(dMdxCoeffFunc,nozzle.geometry.xThroat,options);
