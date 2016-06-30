@@ -25,7 +25,7 @@ import quasi1D
 config = {}; 
 
 # ========================== INPUT PARAMETERS ================================
-config["mission"] = 3 # mission number
+config["mission"] = 5 # mission number
 config["fidelity"] = "med" # "low" (quasi-1D flow), "med" (Euler), or "high" (RANS)
 
 if(config["fidelity"] == "med"):
@@ -43,29 +43,29 @@ config["poissonRatio"] = 0.3 # Poisson's ratio
 
 # --------------------------- SET FLIGHT REGIME ------------------------------
 if(config["mission"] == 1): # static sea-level thrust case
-    altitude = 0
+    altitude = 0.
     mach = 0.01
     config["inletStagTemp"] = 888.3658
     config["inletStagPres"] = 3.0550e5
 elif(config["mission"] == 2): # intermediate case
-    altitude = 15000
+    altitude = 15000.
     mach = 0.5
     config["inletStagTemp"] = 942.9857
     config["inletStagPres"] = 2.3227e5
 elif(config["mission"] == 3): # high speed, high altitude case
-    altitude = 35000
+    altitude = 35000.
     mach = 0.9
     config["inletStagTemp"] = 1021.5
     config["inletStagPres"] = 1.44925e5
 elif(config["mission"] == 4): # case with shock in nozzle
-    altitude = 0
+    altitude = 0.
     mach = 0.01
-    config["inletStagTemp"] = 900
+    config["inletStagTemp"] = 900.
     config["inletStagPres"] = 1.3e5
 elif(config["mission"] == 5): # subsonic flow
-    altitude = 0
+    altitude = 0.
     mach = 0.01
-    config["inletStagTemp"] = 900
+    config["inletStagTemp"] = 900.
     config["inletStagPres"] = 1.1e5
 
 # --------------------- SET ERROR TOLERANCE RANGES ---------------------------
@@ -116,6 +116,7 @@ nozzle.wall.material = material.Material(config["thermalConductivity"],      \
 #nozzle.stringers = AxisymmetricStringers()
 
 nozzle.inlet = inlet.Inlet(config["inletStagPres"],config["inletStagTemp"])
+nozzle.inlet.setMach(0.7)
 
 nozzle.environment = environment.Environment(altitude,config["hInf"])
 
@@ -127,7 +128,12 @@ nozzle.mission.setMach(mach)
 
 # ========================== RUN CALCULATIONS ================================
 
-results = quasi1D.analysis(nozzle)
+tol = {}
+tol["exitTempPercentError"] = 1e-8
+tol["solverRelTol"] = 1e-10
+tol["solverAbsTol"] = 1e-10
+tol["solverApparentThroatLocation"] = 1e-6
+results = quasi1D.analysis(nozzle,tol)
   
 
 

@@ -40,7 +40,7 @@ class Bspline():
                 xMinOld = xMin
         self.xThroat = xMinOld
         self.yThroat = DMinOld/2
-        self.Ainlet2Athroat = (self.inletDiameter/2)**2/self.yThroat**2
+        self.Ainlet2Athroat = (self.inletRadius)**2/self.yThroat**2
         self.Aexit2Athroat = (self.coefs[1,-1])**2/self.yThroat**2
         return (self.xThroat, self.yThroat)
         # return nozzle.geometry.xThroat
@@ -206,6 +206,13 @@ def uMap3(u,bSpline):
 # Return y given x for a 3rd degree B-spline
 #==============================================================================
 def bSplineGeometry(x,bSpline):
+    
+    if( isinstance(x,float) ):
+        if( x > (bSpline.coefs[0][-1]) ):
+            x = bSpline.coefs[0][-1]
+        elif( x < (bSpline.coefs[0][0]) ):
+            x = bSpline.coefs[0][0]
+            #raise ValueError("x is outside bounds of B-spline")
     
     if( isinstance(x,np.ndarray) ):
         nx = x.size # number of x
