@@ -9,6 +9,7 @@ import numpy as np
 import scipy.optimize
 import scipy.integrate
 import time
+import matplotlib.pyplot as plt
 
 #==============================================================================
 # Sutherland's Law of dynamic viscosity of air
@@ -106,7 +107,7 @@ def findApparentThroat(nozzle,tol,(xInterp,Cf,Tstag,dTstagdx)):
     signChangeLocations = np.nonzero(coeffFindSignChange)[0]
     
     if( signChangeLocations.size == 0 ):
-        throatGuess = nozzle.wall.geometry.findThroat()[0]
+        throatGuess = nozzle.wall.geometry.findMinimumRadius()[0]
     else:
         minInd = np.argmin(nozzle.wall.geometry.area(xFind[signChangeLocations]))
         throatGuess = xFind[signChangeLocations[minInd]]
@@ -135,7 +136,7 @@ def findApparentThroat(nozzle,tol,(xInterp,Cf,Tstag,dTstagdx)):
         # END OF for ii in range(minInd,signChangeLocations.size)
             
     xApparentThroat = scipy.optimize.fsolve(func=dMdxCoeffFunc,              \
-      x0=throatGuess,xtol=relTol)
+      x0=throatGuess,xtol=relTol)[0]
     
     # Perform some error checking for the apparent throat location
     if( np.isnan(xApparentThroat) or                                         \
@@ -150,20 +151,9 @@ def findApparentThroat(nozzle,tol,(xInterp,Cf,Tstag,dTstagdx)):
     return xApparentThroat
 
 #==============================================================================
-# Define non-ideal quasi-1D equations of motion for post-throat region    
+# Define non-ideal quasi-1D equations of motion for forward integration    
 #==============================================================================
-def dM2dxPost(x,M2,gam,geo,(xInterp,CfInterp,TstagInterp,dTstagdxInterp)):
-    dAdx = geo.areaGradient(x)
-    A = geo.area(x)
-    D = geo.diameter(x)
-    Cf = np.interp(x,xInterp,CfInterp)
-    Tstag = np.interp(x,xInterp,TstagInterp)
-    dTstagdx = np.interp(x,xInterp,dTstagdxInterp)
-    dM2dx = (2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx/A + 2*gam*M2*Cf/D +        \
-      (1+gam*M2)*dTstagdx/(2*Tstag))
-    return dM2dx
-    
-def dM2dxPost2(M2,x,gam,geo,(xInterp,CfInterp,TstagInterp,dTstagdxInterp)):
+def dM2dxForward(x,M2,gam,geo,(xInterp,CfInterp,TstagInterp,dTstagdxInterp)):
     dAdx = geo.areaGradient(x)
     A = geo.area(x)
     D = geo.diameter(x)
@@ -175,36 +165,201 @@ def dM2dxPost2(M2,x,gam,geo,(xInterp,CfInterp,TstagInterp,dTstagdxInterp)):
     return dM2dx
 
 #==============================================================================
+# Define non-ideal quasi-1D equations of motion for backward integration    
+#==============================================================================    
+def dM2dxBackward(x,M2,xRef,gam,geo,(xInterp,CfInterp,TstagInterp,dTstagdxInterp)):
+    dAdx = geo.areaGradient(xRef-x)
+    A = geo.area(xRef-x)
+    D = geo.diameter(xRef-x)
+    Cf = np.interp(xRef-x,xInterp,CfInterp)
+    Tstag = np.interp(xRef-x,xInterp,TstagInterp)
+    dTstagdx = np.interp(xRef-x,xInterp,dTstagdxInterp)
+    dM2dx = -(2*M2*(1+(gam-1)*M2/2)/(1-M2))*(-dAdx/A + 2*gam*M2*Cf/D +       \
+      (1+gam*M2)*dTstagdx/(2*Tstag))
+    return dM2dx
+    
+#==============================================================================
+# Check ODE integration for problems such as hitting a singularity
+#==============================================================================
+#def checkODEintegration(x,y):
+#    r = 2. # maximum allowable multiplicative factor for slopes between 2
+#            # adjacent steps
+#    tol = 0.01 # tolerance to determine whether y is close enough to zero
+#    
+#    # calculate slopes for each step
+#    m = (y - np.roll(y,1))/(x - np.roll(x,1))
+#    m[0] = m[1] # assume problem doesn't occur at first step
+#
+#    v1 = [ii for ii in range(1,m.size) if abs(m[ii]) > r*abs(m[ii-1]) and (m[ii-1] > tol or m[ii] > tol)]
+#    
+#    if( len(v1) != 0 ):
+#        minIndex = v1[0] - 1 # last good value before solver went crazy
+#    else:
+#        minIndex = -1
+#
+#    return minIndex
+    
+#==============================================================================
+# Integrate ODE built with scipy.integrate.ode and perform simple event check.
+# Provide solution at equally spaced points. Integration will end when event is
+# detected.
+#==============================================================================
+def integrateODEwithEvents(ode,dt,tfinal,ycrit,direction):
+    
+    if( isinstance(dt,float) ): # uniform spacing
+        if( direction == "b" ):
+            x = np.linspace(tfinal,ode.t,np.round((ode.t-tfinal)/dt))
+        else:
+            x = np.linspace(ode.t,tfinal,np.round((tfinal-ode.t)/dt))
+    else:
+        raise TypeError("integration for y(t) at uniform intervals not \
+enabled, dt must be a float")
+        # if non-uniform x-spacing is desired, x must be flipped for backwards
+        # integration
+        # for backwards integration: x = abs(x - max(x)) + min(x)
+    
+    ii = 0
+    y = np.zeros(x.size)
+    delta = 1e-12 # gives distance away from event when solver terminates
+    
+    if( direction == "b" ): # backward integration
+    
+        # translate into a forward integration problem
+        tTemp = ode.t
+        ode.set_initial_value(ode.y,tfinal)
+        tfinal = tTemp
+    
+        if( ode.y > ycrit ):
+            
+            while ode.successful() and ode.t < tfinal - dt/2:
+                
+                yTemp = ode.integrate(ode.t+dt)
+                
+                if( yTemp < ycrit + delta ):
+                    y[x.size-ii-1] = yTemp
+                    break # critical y reached
+                    
+                y[x.size-ii-1] = yTemp
+                ii +=1
+                    
+        elif( ode.y <= ycrit ):
+        
+            while ode.successful() and ode.t < tfinal - dt/2:
+                
+                yTemp = ode.integrate(ode.t+dt)
+                
+                if( yTemp > ycrit - delta ):
+                    y[x.size-ii-1] = yTemp
+                    break # critical y reached
+                
+                y[x.size-ii-1] = yTemp
+                ii +=1       
+    
+    else: # forward integration
+    
+        if( ode.y > ycrit ):
+            
+            while ode.successful() and ode.t < tfinal - dt/2:
+                
+                yTemp = ode.integrate(ode.t+dt)
+                
+                if( yTemp < ycrit + delta ):
+                    y[ii] = yTemp
+                    break # critical y reached
+                    
+                y[ii] = yTemp
+                ii +=1
+                    
+        elif( ode.y <= ycrit ):
+        
+            while ode.successful() and ode.t < tfinal - dt/2:
+                
+                yTemp = ode.integrate(ode.t+dt)
+                
+                if( yTemp > ycrit - delta ):
+                    y[ii] = yTemp
+                    break # critical y reached
+                
+                y[ii] = yTemp
+                ii +=1  
+    
+    return (x,y,ii)
+    
+#==============================================================================
 # Integrate subsonic flow through an axial nozzle geometry
 #==============================================================================
-def integrateSubsonic(nozzle,tol,params):
-    if( hasattr(nozzle.inlet, "mach") ): # then integrate using given Mach
+def integrateSubsonic(nozzle,tol,params,xThroat,nPartitions):
+    
+    # Use inlet Mach number provided by user, if available
+    if( hasattr(nozzle.inlet, "mach") ):
         print "Using prescribed inlet Mach number\n"
         M0 = nozzle.inlet.mach
         
-#        start = time.time()
-#        r = scipy.integrate.ode(dM2dxPost,jac=None).set_integrator('dopri5', \
-#          atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
-#        r.set_initial_value(M0**2,0.)
-#        r.set_f_params(nozzle.fluid.gam,nozzle.wall.geometry,params)
-#        dt = nozzle.wall.geometry.length/200.
-#        while r.successful() and r.t < nozzle.wall.geometry.length:
-#            r.integrate(r.t+dt)
-#            #print("%g %g" % (r.t, r.y))
-#        M2 = r.integrate(nozzle.wall.geometry.length)
-#        end= time.time()
-#        print(end-start)
+        f = scipy.integrate.ode(dM2dxForward,jac=None).set_integrator(       \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        f.set_initial_value(M0**2,0.)
+        f.set_f_params(nozzle.fluid.gam,nozzle.wall.geometry,params)
+        dt = nozzle.wall.geometry.length/nPartitions
+        tfinal = nozzle.wall.geometry.length
+        (xIntegrate,M2,eventIndex) = integrateODEwithEvents(f,dt,tfinal,1.,"f")
         
-#        start = time.time()
-        xIntegrate = np.linspace(0.,nozzle.wall.geometry.length,200)
-        M2 = scipy.integrate.odeint(dM2dxPost2,M0**2,xIntegrate,             \
-          (nozzle.fluid.gam,nozzle.wall.geometry,params),                    \
-          atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
-#        end = time.time()
-#        print(end-start)
+        if( eventIndex != xIntegrate.size ):
+            raise ValueError("Integration terminated early: prescribed inlet \
+Mach number is too large")
+    
+    # Else if nozzle converges only, assume choked flow at the exit    
+    elif( nozzle.wall.geometry.length - xThroat < 1e-12 ):
+        M0 = 0.9999 # start integration from this Mach number
         
+        b = scipy.integrate.ode(dM2dxBackward,jac=None).set_integrator(      \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        b.set_initial_value(M0**2,nozzle.wall.geometry.length)
+        b.set_f_params(nozzle.wall.geometry.length,nozzle.fluid.gam,         \
+          nozzle.wall.geometry,params)
+        dt = nozzle.wall.geometry.length/nPartitions
+        tfinal = 0.
+        (xIntegrate,M2,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
+                
+        if( eventIndex != xIntegrate.size ):
+            raise RuntimeError("Integration terminated early while \
+integrating backwards from the exit")
+    
+    # Else, assume nozzle is choked at throat, integrate forwards & backwards
     else:
-        print "else"
+        UpperM = 0.9999 # start integration at this Mach number for aft portion
+        LowerM = 0.9999 # start integ. at this Mach number for fore portion
+        dx = 1e-5 # 1e-5 for 0.9999 to 1.0001 or 1e-4 for 0.999 to 1.001
+        
+        # Integrate forward from throat
+        f = scipy.integrate.ode(dM2dxForward,jac=None).set_integrator(       \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        f.set_initial_value(UpperM**2,xThroat+dx/2)
+        f.set_f_params(nozzle.fluid.gam,nozzle.wall.geometry,params)
+        nP = np.round((1-xThroat/nozzle.wall.geometry.length)*nPartitions)
+        dt = (nozzle.wall.geometry.length-xThroat-dx/2)/nP
+        tfinal = nozzle.wall.geometry.length
+        (xF,M2F,eventIndex) = integrateODEwithEvents(f,dt,tfinal,1.,"f")
+        
+        if( eventIndex != xF.size ):
+            raise RuntimeError("Integration terminated early while \
+integrating forwards from the throat")
+        
+        # Integrate backward from throat
+        b = scipy.integrate.ode(dM2dxBackward,jac=None).set_integrator(      \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        b.set_initial_value(LowerM**2,xThroat-dx/2)
+        b.set_f_params(xThroat,nozzle.fluid.gam,nozzle.wall.geometry,params)
+        nP = np.round(xThroat/nozzle.wall.geometry.length*nPartitions)
+        dt = (xThroat-dx/2)/nP
+        tfinal = 0.
+        (xB,M2B,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
+                
+        if( eventIndex != xB.size ):
+            raise RuntimeError("Integration terminated early while \
+integrating backwards from throat")
+    
+        xIntegrate = np.concatenate((xB,xF))
+        M2 = np.concatenate((M2B,M2F))
     
     return (xIntegrate, M2)
 
@@ -212,14 +367,69 @@ def integrateSubsonic(nozzle,tol,params):
 # Integrate subsonic, shock post-throat, supersonic flow through an axial 
 # nozzle geometry
 #==============================================================================
-def integrateShock(nozzle,tol,params):
+def integrateShock(nozzle,tol,params,xThroat,nPartitions):
     pass
 
 #==============================================================================
 # Integrate supersonic flow through an axial nozzle geometry
 #==============================================================================
-def integrateSupersonic(nozzle,tol,params):
-    pass
+def integrateSupersonic(nozzle,tol,params,xThroat,nPartitions):
+        
+    # If nozzle converges only, assume choked flow at the exit    
+    if( nozzle.wall.geometry.length - xThroat < 1e-12 ):
+        M0 = 0.9999 # start integration from this Mach number
+        
+        b = scipy.integrate.ode(dM2dxBackward,jac=None).set_integrator(      \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        b.set_initial_value(M0**2,nozzle.wall.geometry.length)
+        b.set_f_params(xThroat,nozzle.wall.geometry.length,nozzle.fluid.gam,         \
+          nozzle.wall.geometry,params)
+        dt = nozzle.wall.geometry.length/nPartitions
+        tfinal = 0.
+        (xIntegrate,M2,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
+                
+        if( eventIndex != xIntegrate.size ):
+            raise RuntimeError("Integration terminated early while \
+integrating backwards from the exit")
+
+    # Else, assume nozzle is choked at throat, integrate forwards & backwards
+    else:
+        UpperM = 1.0001 # start integration at this Mach number for aft portion
+        LowerM = 0.9999 # start integ. at this Mach number for fore portion
+        dx = 1e-4 # 1e-5 for 0.9999 to 1.0001 or 1e-4 for 0.999 to 1.001
+        
+        # Integrate forward from throat
+        f = scipy.integrate.ode(dM2dxForward,jac=None).set_integrator(       \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        f.set_initial_value(UpperM**2,xThroat+dx/2)
+        f.set_f_params(nozzle.fluid.gam,nozzle.wall.geometry,params)
+        nP = np.round((1-xThroat/nozzle.wall.geometry.length)*nPartitions)
+        dt = (nozzle.wall.geometry.length-xThroat-dx/2)/nP
+        tfinal = nozzle.wall.geometry.length
+        (xF,M2F,eventIndex) = integrateODEwithEvents(f,dt,tfinal,1.,"f")
+        
+        if( eventIndex != xF.size ):
+            raise RuntimeError("Integration terminated early while \
+integrating forwards from the throat")
+        
+        # Integrate backward from throat
+        b = scipy.integrate.ode(dM2dxBackward,jac=None).set_integrator(      \
+          'dopri5',atol=tol["solverAbsTol"],rtol=tol["solverRelTol"])
+        b.set_initial_value(LowerM**2,xThroat-dx/2)
+        b.set_f_params(xThroat,nozzle.fluid.gam,nozzle.wall.geometry,params)
+        nP = np.round(xThroat/nozzle.wall.geometry.length*nPartitions)
+        dt = (xThroat-dx/2)/nP
+        tfinal = 0.
+        (xB,M2B,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
+                
+        if( eventIndex != xB.size ):
+            raise RuntimeError("Integration terminated early while \
+integrating backwards from throat")
+    
+        xIntegrate = np.concatenate((xB,xF))
+        M2 = np.concatenate((M2B,M2F))
+    
+    return (xIntegrate, M2)
 
 #==============================================================================
 # Perform quasi-1D area-averaged Navier-Stokes analysis of axisymmetric nozzle.
@@ -266,28 +476,34 @@ def analysis(nozzle,tol):
         
         counter += 1
         
-        # ODE solver options
-        odeSolverRelTol = tol["solverRelTol"]
-        odeSolverAbsTol = tol["solverAbsTol"]
-        #odeEvents = define eventsFcn
-        
+        # Parameters passed to functions called by ODE        
         params = (xInterp,Cf,Tstag,dTstagdx)
         
         # Find where M = 1
         xApparentThroat = findApparentThroat(nozzle,tol,params)
         
         if( status == "no flow" ):
-            raise UserWarning("Prescribed inputs result in flow reversal     \
-              in nozzle")
+            raise UserWarning("Prescribed inputs result in flow reversal \
+in nozzle")
         elif( status == "subsonic" ):
-            (xPosition,M2) = integrateSubsonic(nozzle,tol,params)
+            (xPosition,M2) = integrateSubsonic(nozzle,tol,params,            \
+              xApparentThroat,1000)
         elif( status == "shock" ):
-            (xPosition,M2) == integrateShock(nozzle,tol,params)
+            (xPosition,M2) = integrateShock(nozzle,tol,params,               \
+              xApparentThroat,1000)
         else: # supersonic flow
-            (xPosition,M2) == integrateSupersonic(nozzle,tol,params)
+            (xPosition,M2) = integrateSupersonic(nozzle,tol,params,          \
+              xApparentThroat,1000)
+              
+        # Check output
+        if( np.isnan(M2.any()) or M2.any() < 0. or np.isinf(M2.any()) ):
+            raise RuntimeError("Unrealistic Mach number calculated")
             
-        print xPosition
-        print M2
+        #print xPosition
+        #print M2
+        plt.plot(xPosition,M2)
+        plt.axis([0.,0.67,0.,3.])
+        plt.show()
         
         
         

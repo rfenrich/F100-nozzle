@@ -25,7 +25,7 @@ import quasi1D
 config = {}; 
 
 # ========================== INPUT PARAMETERS ================================
-config["mission"] = 5 # mission number
+config["mission"] = 3 # mission number
 config["fidelity"] = "med" # "low" (quasi-1D flow), "med" (Euler), or "high" (RANS)
 
 if(config["fidelity"] == "med"):
@@ -107,6 +107,7 @@ nozzle = nozzle.Nozzle()
 nozzle.wall = component.AxisymmetricWall()
 
 nozzle.wall.geometry = geometry.Bspline(config["bSplineCoefficients"])
+#nozzle.wall.geometry = geometry.PiecewiseLinear(np.array(([0., 0.67],[0.32, 0.24])))
 nozzle.wall.thickness = geometry.PiecewiseLinear(config["thicknessNodeArray"])
 nozzle.wall.material = material.Material(config["thermalConductivity"],      \
   config["coeffThermalExpansion"], config["elasticModulus"],                 \
@@ -116,7 +117,7 @@ nozzle.wall.material = material.Material(config["thermalConductivity"],      \
 #nozzle.stringers = AxisymmetricStringers()
 
 nozzle.inlet = inlet.Inlet(config["inletStagPres"],config["inletStagTemp"])
-nozzle.inlet.setMach(0.7)
+#nozzle.inlet.setMach(0.2)
 
 nozzle.environment = environment.Environment(altitude,config["hInf"])
 

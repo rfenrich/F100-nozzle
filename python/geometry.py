@@ -43,7 +43,6 @@ class Bspline():
         self.Ainlet2Athroat = (self.inletRadius)**2/self.yThroat**2
         self.Aexit2Athroat = (self.coefs[1,-1])**2/self.yThroat**2
         return (self.xThroat, self.yThroat)
-        # return nozzle.geometry.xThroat
         
     def radius(self, x): # r
         y = bSplineGeometry(x,self)[0]
@@ -69,7 +68,12 @@ class PiecewiseLinear:
         self.inletRadius = nodes[1,0]
         
     def findMinimumRadius(self):
-        pass
+        ii = np.argmin(self.nodes[1,:])
+        self.xThroat = self.nodes[0,ii]
+        self.yThroat = self.nodes[1,ii]
+        self.Ainlet2Athroat = (self.inletRadius)**2/self.yThroat**2
+        self.Aexit2Athroat = (self.nodes[1,-1])**2/self.yThroat**2
+        return (self.xThroat, self.yThroat)
         
     def radius(self, x): # r
         y = np.interp(x,self.nodes[0,:],self.nodes[1,:])
@@ -85,12 +89,24 @@ class PiecewiseLinear:
         
     def areaGradient(self, x): # dAdx
         y = np.interp(x,self.nodes[0,:],self.nodes[1,:])
-        upperIndex = find(x,self.nodes[0,:])
-        if( upperIndex == self.nodes.size/2 ):
-            upperIndex = upperIndex - 1
-        lowerIndex = upperIndex - 1
-        dydx = (self.nodes[1,upperIndex] - self.nodes[1,lowerIndex])/        \
-          (self.nodes[0,upperIndex] - self.nodes[0,lowerIndex])
+        if( isinstance(x,float) ):
+            upperIndex = find(x,self.nodes[0,:])
+            if( upperIndex == self.nodes.size/2 ):
+                upperIndex = upperIndex - 1
+            lowerIndex = upperIndex - 1
+            dydx = (self.nodes[1,upperIndex] - self.nodes[1,lowerIndex])/    \
+              (self.nodes[0,upperIndex] - self.nodes[0,lowerIndex])
+        else: # x is an array
+            dydx = np.zeros(x.size)
+            for ii in range(0,x.size):
+                upperIndex = find(x[ii],self.nodes[0,:])
+                if( upperIndex == self.nodes.size/2 ):
+                    upperIndex = upperIndex - 1
+                lowerIndex = upperIndex - 1
+                dydx[ii] = (self.nodes[1,upperIndex] - 
+                  self.nodes[1,lowerIndex])/(self.nodes[0,upperIndex]        \
+                  - self.nodes[0,lowerIndex])
+            
         return 2*np.pi*y*dydx
 
 #==============================================================================
