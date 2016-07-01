@@ -16,12 +16,14 @@ import matplotlib.pyplot as plt
 #==============================================================================
 def dynamicViscosity(T):
     mu = 1.716e-5*(T/273.15)**1.5*(273.15 + 110.4)/(T + 110.4)
+    return mu
    
 #==============================================================================
 # Area-Mach function from 1-D mass conservation equations
 #==============================================================================
 def areaMachFunc(g,M):
-    ((g+1)/2)**((g+1)/(2*(g-1)))*M/(1+(g-1)*M**2/2)**((g+1)/(2*(g-1)))
+    a = ((g+1)/2)**((g+1)/(2*(g-1)))*M/(1+(g-1)*M**2/2)**((g+1)/(2*(g-1)))
+    return a
 
 #==============================================================================
 # Ideal analysis of nozzle (no heat transfer or friction)
@@ -448,6 +450,7 @@ integrating backwards from throat")
 def analysis(nozzle,tol):
     
     # Initialize
+    gam = nozzle.fluid.gam
     xApparentThroat = nozzle.wall.geometry.findMinimumRadius()[0]
     
     # Determine state of nozzle assuming ideal conditions
@@ -499,11 +502,65 @@ in nozzle")
         if( np.isnan(M2.any()) or M2.any() < 0. or np.isinf(M2.any()) ):
             raise RuntimeError("Unrealistic Mach number calculated")
             
+        # Calculate other 1D flow properties
+        M = np.sqrt(M2)
+        Tstag = np.interp(xPosition,xPositionOld,Tstag)
+        T = Tstag/(1 + (gam-1)*M2/2) # static temp. from stag. temp. def.
+        Pstag = nozzle.inlet.Pstag*(nozzle.wall.geometry.area(0.)/           \
+          nozzle.wall.geometry.area(xPosition))*(areaMachFunc(gam,M[0])/     \
+          areaMachFunc(gam,M))*np.sqrt(Tstag/Tstag[0]) # from mass conserv.
+        P = Pstag/(1 + (gam-1)*M2/2)**(gam/(gam-1)) # from stag. press. def.
+        density = P/(nozzle.fluid.R*T)
+        U = M*np.sqrt(gam*nozzle.fluid.R*T) # velocity
+        Re = density*U*nozzle.wall.geometry.diameter(xPosition)/             \
+          dynamicViscosity(T) # Reynolds number from definition
+        Cf = np.interp(xPosition,xPositionOld,Cf) # friction coefficient
+            
+        # Recalculate friction and heat
+        # heat transfer coefficient to interior nozzle wall, estimated using
+        # Chilton-Colburn analogy
+        hf = nozzle.fluid.Pr(T)**(2/3)*density*nozzle.fluid.Cp(T)*U*Cf/2
+        
+        # Redefine stagnation temperature distribution
+        # FIX INTEGRAL BY CENTERING EACH INTERVAL ON A POINT
+#        TstagXIntegrand = 4/(nozzle.fluid.Cp(T)*density*U*                   \
+#          nozzle.wall.geometry.diameter(xPosition)*(1/hf +                   \
+#          nozzle.wall.thickness.radius(xPosition)/nozzle.wall.material.k     \
+#          + 1/nozzle.environment.hInf))
+#        TstagXIntegral = scipy.integrate.cumtrapz(TstagXIntegrand,xPosition)
+#        Tstag = nozzle.environment.T*(1 - np.exp(-TstagXIntegral)) +         \
+#          nozzle.inlet.Tstag*np.exp(-TstagXIntegral)
+#        dTstagdx = (nozzle.environment.T - Tstag)*4/(nozzle.fluid.Cp(T)*     \
+#          density*U*nozzle.wall.geometry.diameter(xPosition)*(1/hf +         \
+#          nozzle.wall.thickness.radius(xPosition)/nozzle.wall.material.k +   \
+#          1/nozzle.environment.hInf))
+          
+        # Estimate interior wall temperature
+        
+        
         #print xPosition
         #print M2
-        plt.plot(xPosition,M2)
-        plt.axis([0.,0.67,0.,3.])
-        plt.show()
+#        plt.plot(xPosition,M2)
+#        plt.axis([0.,0.67,0.,3.])
+#        plt.show()
+#        
+#        plt.plot(xPosition,M)
+#        plt.show()
+#        
+#        plt.plot(xPosition,Tstag,'r-',xPosition,T,'b-')
+#        plt.show()
+#        
+#        plt.plot(xPosition,Pstag,'r-',xPosition,P,'b-')
+#        plt.show()
+#        
+#        plt.plot(xPosition,density)
+#        plt.show()
+#        
+#        plt.plot(xPosition,U)
+#        plt.show()
+#        
+#        plt.plot(xPosition,Re)
+#        plt.show()
         
         
         
