@@ -11,6 +11,8 @@ import scipy.integrate
 import time
 import matplotlib.pyplot as plt
 
+import lifetime
+
 #==============================================================================
 # Sutherland's Law of dynamic viscosity of air
 #==============================================================================
@@ -25,6 +27,16 @@ def areaMachFunc(g,M):
     a = ((g+1)/2)**((g+1)/(2*(g-1)))*M/(1+(g-1)*M**2/2)**((g+1)/(2*(g-1)))
     return a
 
+#==============================================================================
+# Mass flow-rate
+#==============================================================================
+def massFlowRate(fluid,Pstag,Area,Tstag,M):
+    gam = fluid.gam
+    R = fluid.R;
+    mdot = (gam/((gam+1)/2)**((gam+1)/(2*(gam-1))))*Pstag*Area*              \
+      areaMachFunc(gam,M)/np.sqrt(gam*R*Tstag)
+    return mdot
+    
 #==============================================================================
 # Ideal analysis of nozzle (no heat transfer or friction)
 #==============================================================================
@@ -214,8 +226,8 @@ def integrateODEwithEvents(ode,dt,tfinal,ycrit,direction):
         else:
             x = np.linspace(ode.t,tfinal,np.round((tfinal-ode.t)/dt))
     else:
-        raise TypeError("integration for y(t) at uniform intervals not \
-enabled, dt must be a float")
+        raise TypeError(("integration for y(t) at uniform intervals not ",
+                        "enabled, dt must be a float"))
         # if non-uniform x-spacing is desired, x must be flipped for backwards
         # integration
         # for backwards integration: x = abs(x - max(x)) + min(x)
@@ -306,8 +318,8 @@ def integrateSubsonic(nozzle,tol,params,xThroat,nPartitions):
         (xIntegrate,M2,eventIndex) = integrateODEwithEvents(f,dt,tfinal,1.,"f")
         
         if( eventIndex != xIntegrate.size ):
-            raise ValueError("Integration terminated early: prescribed inlet \
-Mach number is too large")
+            raise ValueError(("Integration terminated early: prescribed ",
+                              "inlet Mach number is too large"))
     
     # Else if nozzle converges only, assume choked flow at the exit    
     elif( nozzle.wall.geometry.length - xThroat < 1e-12 ):
@@ -323,8 +335,8 @@ Mach number is too large")
         (xIntegrate,M2,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
                 
         if( eventIndex != xIntegrate.size ):
-            raise RuntimeError("Integration terminated early while \
-integrating backwards from the exit")
+            raise RuntimeError(("Integration terminated early while ",
+                               "integrating backwards from the exit"))
     
     # Else, assume nozzle is choked at throat, integrate forwards & backwards
     else:
@@ -343,8 +355,8 @@ integrating backwards from the exit")
         (xF,M2F,eventIndex) = integrateODEwithEvents(f,dt,tfinal,1.,"f")
         
         if( eventIndex != xF.size ):
-            raise RuntimeError("Integration terminated early while \
-integrating forwards from the throat")
+            raise RuntimeError(("Integration terminated early while ",
+                               "integrating forwards from the throat"))
         
         # Integrate backward from throat
         b = scipy.integrate.ode(dM2dxBackward,jac=None).set_integrator(      \
@@ -357,8 +369,8 @@ integrating forwards from the throat")
         (xB,M2B,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
                 
         if( eventIndex != xB.size ):
-            raise RuntimeError("Integration terminated early while \
-integrating backwards from throat")
+            raise RuntimeError(("Integration terminated early while ",
+                               "integrating backwards from throat"))
     
         xIntegrate = np.concatenate((xB,xF))
         M2 = np.concatenate((M2B,M2F))
@@ -391,8 +403,8 @@ def integrateSupersonic(nozzle,tol,params,xThroat,nPartitions):
         (xIntegrate,M2,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
                 
         if( eventIndex != xIntegrate.size ):
-            raise RuntimeError("Integration terminated early while \
-integrating backwards from the exit")
+            raise RuntimeError(("Integration terminated early while ",
+                               "integrating backwards from the exit"))
 
     # Else, assume nozzle is choked at throat, integrate forwards & backwards
     else:
@@ -411,8 +423,8 @@ integrating backwards from the exit")
         (xF,M2F,eventIndex) = integrateODEwithEvents(f,dt,tfinal,1.,"f")
         
         if( eventIndex != xF.size ):
-            raise RuntimeError("Integration terminated early while \
-integrating forwards from the throat")
+            raise RuntimeError(("Integration terminated early while ",
+                               "integrating forwards from the throat"))
         
         # Integrate backward from throat
         b = scipy.integrate.ode(dM2dxBackward,jac=None).set_integrator(      \
@@ -425,13 +437,37 @@ integrating forwards from the throat")
         (xB,M2B,eventIndex) = integrateODEwithEvents(b,dt,tfinal,1.,"b")
                 
         if( eventIndex != xB.size ):
-            raise RuntimeError("Integration terminated early while \
-integrating backwards from throat")
+            raise RuntimeError(("Integration terminated early while ",
+                                "integrating backwards from throat"))
     
         xIntegrate = np.concatenate((xB,xF))
         M2 = np.concatenate((M2B,M2F))
     
     return (xIntegrate, M2)
+
+#==============================================================================
+# Cumulative trapezoidal integration using linear interpolation to return n 
+# results for a vector of size n    
+#==============================================================================
+def integrateTrapezoidal(y,x):
+        integrand = np.empty(x.size+1)
+        dx = np.empty(x.size+1)
+        
+        dx0 = x[1] - x[0]
+        dxN = x[-1] - x[-2]
+        
+        integrand[0] = y[0] - (y[1] - y[0])/dx0*(x[0] - (x[0] - dx0/2))
+        integrand[1:-1] = y[1:] - (y[1:] - y[:-1])/(x[1:] - x[:-1])*         \
+          (x[1:] - (x[1:] + x[:-1])/2)
+        integrand[-1] = y[-1] + (y[-1] - y[-1])/dxN*((x[-1] + dxN/2) - x[-1])
+        
+        dx[0] = x[0] - dx0/2
+        dx[1:-1] = (x[1:] + x[:-1])/2
+        dx[-1] = x[-1] + dxN/2
+        
+        integral = scipy.integrate.cumtrapz(integrand,dx)
+        
+        return (integral)
 
 #==============================================================================
 # Perform quasi-1D area-averaged Navier-Stokes analysis of axisymmetric nozzle.
@@ -452,6 +488,7 @@ def analysis(nozzle,tol):
     # Initialize
     gam = nozzle.fluid.gam
     xApparentThroat = nozzle.wall.geometry.findMinimumRadius()[0]
+    nOdeIntegrationSteps = 200;
     
     # Determine state of nozzle assuming ideal conditions
     pressureRatio = nozzle.inlet.Pstag/nozzle.environment.P
@@ -463,7 +500,6 @@ def analysis(nozzle,tol):
       TstagThroat,PstagExit,TstagExit)
     
     # Initialize loop variables
-    xInterp = np.array(([0., nozzle.wall.geometry.length]))
     Cf = np.array(([0.004, 0.004]))
     Tstag = np.array(([nozzle.inlet.Tstag, nozzle.inlet.Tstag]))
     dTstagdx = np.array(([-6., -6.]))
@@ -480,40 +516,44 @@ def analysis(nozzle,tol):
         counter += 1
         
         # Parameters passed to functions called by ODE        
-        params = (xInterp,Cf,Tstag,dTstagdx)
+        params = (xPositionOld,Cf,Tstag,dTstagdx)
         
         # Find where M = 1
         xApparentThroat = findApparentThroat(nozzle,tol,params)
         
         if( status == "no flow" ):
-            raise UserWarning("Prescribed inputs result in flow reversal \
-in nozzle")
+            raise UserWarning(("Prescribed inputs result in flow reversal ",
+                               "in nozzle"))
         elif( status == "subsonic" ):
             (xPosition,M2) = integrateSubsonic(nozzle,tol,params,            \
-              xApparentThroat,1000)
+              xApparentThroat,nOdeIntegrationSteps)
         elif( status == "shock" ):
             (xPosition,M2) = integrateShock(nozzle,tol,params,               \
-              xApparentThroat,1000)
+              xApparentThroat,nOdeIntegrationSteps)
         else: # supersonic flow
             (xPosition,M2) = integrateSupersonic(nozzle,tol,params,          \
-              xApparentThroat,1000)
+              xApparentThroat,nOdeIntegrationSteps)
               
         # Check output
         if( np.isnan(M2.any()) or M2.any() < 0. or np.isinf(M2.any()) ):
             raise RuntimeError("Unrealistic Mach number calculated")
             
+        # Calculate geometric properties
+        D = nozzle.wall.geometry.diameter(xPosition)
+        A = nozzle.wall.geometry.area(xPosition)
+        #dAdx = nozzle.wall.geometry.dAdx(xPosition)
+        t = nozzle.wall.thickness.radius(xPosition)
+            
         # Calculate other 1D flow properties
         M = np.sqrt(M2)
         Tstag = np.interp(xPosition,xPositionOld,Tstag)
         T = Tstag/(1 + (gam-1)*M2/2) # static temp. from stag. temp. def.
-        Pstag = nozzle.inlet.Pstag*(nozzle.wall.geometry.area(0.)/           \
-          nozzle.wall.geometry.area(xPosition))*(areaMachFunc(gam,M[0])/     \
+        Pstag = nozzle.inlet.Pstag*(A[0]/A)*(areaMachFunc(gam,M[0])/         \
           areaMachFunc(gam,M))*np.sqrt(Tstag/Tstag[0]) # from mass conserv.
         P = Pstag/(1 + (gam-1)*M2/2)**(gam/(gam-1)) # from stag. press. def.
         density = P/(nozzle.fluid.R*T)
         U = M*np.sqrt(gam*nozzle.fluid.R*T) # velocity
-        Re = density*U*nozzle.wall.geometry.diameter(xPosition)/             \
-          dynamicViscosity(T) # Reynolds number from definition
+        Re = density*U*D/dynamicViscosity(T) # Reynolds number from definition
         Cf = np.interp(xPosition,xPositionOld,Cf) # friction coefficient
             
         # Recalculate friction and heat
@@ -522,22 +562,116 @@ in nozzle")
         hf = nozzle.fluid.Pr(T)**(2/3)*density*nozzle.fluid.Cp(T)*U*Cf/2
         
         # Redefine stagnation temperature distribution
-        # FIX INTEGRAL BY CENTERING EACH INTERVAL ON A POINT
-#        TstagXIntegrand = 4/(nozzle.fluid.Cp(T)*density*U*                   \
-#          nozzle.wall.geometry.diameter(xPosition)*(1/hf +                   \
-#          nozzle.wall.thickness.radius(xPosition)/nozzle.wall.material.k     \
-#          + 1/nozzle.environment.hInf))
-#        TstagXIntegral = scipy.integrate.cumtrapz(TstagXIntegrand,xPosition)
-#        Tstag = nozzle.environment.T*(1 - np.exp(-TstagXIntegral)) +         \
-#          nozzle.inlet.Tstag*np.exp(-TstagXIntegral)
-#        dTstagdx = (nozzle.environment.T - Tstag)*4/(nozzle.fluid.Cp(T)*     \
-#          density*U*nozzle.wall.geometry.diameter(xPosition)*(1/hf +         \
-#          nozzle.wall.thickness.radius(xPosition)/nozzle.wall.material.k +   \
-#          1/nozzle.environment.hInf))
+        TstagXIntegrand = 4/(nozzle.fluid.Cp(T)*density*U*D*(1/hf +          \
+          t/nozzle.wall.material.k + 1/nozzle.environment.hInf))
+        TstagXIntegral = integrateTrapezoidal(TstagXIntegrand,xPosition)
+        Tstag = nozzle.environment.T*(1 - np.exp(-TstagXIntegral)) +         \
+          nozzle.inlet.Tstag*np.exp(-TstagXIntegral)
+        dTstagdx = (nozzle.environment.T - Tstag)*4/(nozzle.fluid.Cp(T)*     \
+          density*U*D*(1/hf + t/nozzle.wall.material.k +                     \
+          1/nozzle.environment.hInf))
           
         # Estimate interior wall temperature
+        Qw = nozzle.fluid.Cp(T)*density*U*D*dTstagdx/4
+        Tinside = Tstag + Qw/hf # interior wall temperature
+        recoveryFactor = (Tinside/T - 1)/((gam-1)*M2/2)
         
+        # Estimate exterior wall temperature
+        Toutside = nozzle.environment.T - Qw/nozzle.environment.hInf
+    
+        # Redefine friction coefficient distribution (Sommer & Short's method)
+        TPrimeRatio = 1 + 0.035*M2 + 0.45*(Tinside/T -1)
+        RePrimeRatio = 1/(TPrimeRatio*(TPrimeRatio)**1.5*(1 + 110.4/T)/      \
+          (TPrimeRatio + 110.4/T))
+        CfIncomp = 0.074/Re**0.2
+        Cf = CfIncomp/TPrimeRatio/RePrimeRatio**0.2
         
+        # Save old solution x position for next iteration
+        xPositionOld = xPosition    
+        
+        # Recalculate nozzle status
+        TstagThroat = np.interp(xApparentThroat,xPosition,Tstag)
+        PstagThroat = np.interp(xApparentThroat,xPosition,Pstag)
+        TstagExit = Tstag[-1]
+        if( status == "shock" ):
+            # approximate calculation
+            shockIndex = 10000 
+            pressureRatio = Pstag[shockIndex-1]/nozzle.environment.P
+            PstagExit = Pstag[shockIndex-1] # temp. fix
+            (status,shock) = nozzleState(nozzle,pressureRatio,PstagThroat,   \
+              TstagThroat,PstagExit,TstagExit)
+            PstagExit = Pstag[-1]
+        else: # no shock in nozzle; assume no Pstag loss
+            pressureRatio = Pstag[-1]/nozzle.environment.P
+            PstagExit = Pstag[-1]
+            (status,shock) = nozzleState(nozzle,pressureRatio,PstagThroat,   \
+              TstagThroat,PstagExit,TstagExit)
+        
+        #print "%i\n" % counter
+        
+        if( counter >= maxIterations ):
+            print "Iteration limit for quasi-1D heat xfer & friction reached\n"
+            break
+        
+        # Check tolerance on static temperature at nozzle exit
+        percentError = abs(T[-1] - Texit_old)/T[-1]
+        #print "Percent error: %e\n" % (percentError*100)
+        Texit_old = T[-1]
+        if( percentError < tolerance ):
+            #print "%i iterations to converge quasi-1D heat xfer & friction \
+#calcs\n" % counter    
+            break
+    
+    # END OF while( ~converged )
+    
+    dAdx = nozzle.wall.geometry.areaGradient(xPosition)
+    
+    # Assign flow data
+    flowDimension = 1 # 1-dimensional flow field
+    # CAN ASSIGN M, U, P, Pstag, Re, Qw etc. here
+    
+    # Assign geometry data
+    # CAN ASSIGN geometry data such as maxSlope, minSlope here
+    
+    # Calculate mass flow rate
+    mdot = massFlowRate(nozzle.fluid,Pstag,A,Tstag,M)
+    
+    # Calculate thrust
+    exitAngle = np.arctan2(dAdx[-1],D[-1])
+    divergenceFactor = (1 + np.cos(exitAngle))/2
+    netThrust = divergenceFactor*mdot[0]*(U - nozzle.mission.mach/           \
+      nozzle.environment.c) + (P[-1] - nozzle.environment.P)*A[-1]
+    grossThrust = divergenceFactor*mdot[0]*U + (P[-1] -              \
+      nozzle.environment.P)*A[-1]
+      
+    # Calculate stresses
+    # Stresses calculated assuming cylinder; nozzle length not constrained in 
+    # thermal expansion
+    stressHoop = P*D/(2*t)
+    
+    # Thermal stresses calculated assuming steady-state, give max tens. stress
+    ri = D/2 # inner radius
+    ro = D/2 + t # outer radius
+    stressThermalRadial = nozzle.wall.material.E*                            \
+      nozzle.wall.material.alpha*(Tinside-Toutside)/                         \
+      (2*(1-nozzle.wall.material.v))*(1/np.log(ro/ri))*(1 - 2*ri**2/         \
+      (ro**2 - ri**2)*np.log(ro/ri))
+    stressThermalTangential = stressThermalRadial
+
+    # Estimate vonMises, even though not really valid for composites
+#    stressVonMises = np.sqrt( (stressHoop+stressThermalTangential)**2 -      \
+#      stressHoop*stressThermalRadial + stressThermalRadial**2 )
+    stressMaxPrincipal = stressHoop + stressThermalTangential
+    stressPrincipal = (stressMaxPrincipal, stressThermalRadial,              \
+      np.zeros(xPosition.size))
+      
+    # Calculate cycles to failure, Nf
+    Nf = lifetime.estimate(Tinside,stressMaxPrincipal,1)
+    
+    # Calculate volume of nozzle material (approximately using trap. integ.)
+    # volume = wallVolume(nozzle.wall.geometry.length,D,t,"integrate")
+    
+    
         #print xPosition
         #print M2
 #        plt.plot(xPosition,M2)
@@ -561,12 +695,6 @@ in nozzle")
 #        
 #        plt.plot(xPosition,Re)
 #        plt.show()
-        
-        
-        
-        break
-    
-    # END OF while( ~converged )
     
 # END OF analysis(nozzle,tol)
     

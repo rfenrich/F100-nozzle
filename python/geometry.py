@@ -8,6 +8,7 @@ Rick Fenrich 6/28/16
 
 import numpy as np 
 import scipy.optimize   
+import geometryC
 
 class Bspline():
     def __init__(self, coefs): # assumes 3rd degree B-spline
@@ -45,19 +46,23 @@ class Bspline():
         return (self.xThroat, self.yThroat)
         
     def radius(self, x): # r
-        y = bSplineGeometry(x,self)[0]
+        #y = bSplineGeometry(x,self)[0] # Python version (slower)
+        y = bSplineGeometryC(x,self)[0] # uses dynamic C library
         return y     
         
     def diameter(self, x): # D
-        y = bSplineGeometry(x,self)[0]
+        #y = bSplineGeometry(x,self)[0] # Python version (slower)
+        y = bSplineGeometryC(x,self)[0] # uses dynamic C library
         return y*2
         
     def area(self, x): # A
-        y = bSplineGeometry(x,self)[0]
+        #y = bSplineGeometry(x,self)[0] # Python version (slower)
+        y = bSplineGeometryC(x,self)[0] # uses dynamic C library
         return np.pi*y**2
         
     def areaGradient(self, x): # dAdx
-        (y, dydx) = bSplineGeometry(x,self)
+        #(y, dydx) = bSplineGeometry(x,self) # Python version (slower)
+        (y, dydx) = bSplineGeometryC(x,self) # uses dynamic C library
         return 2*np.pi*y*dydx
         
 class PiecewiseLinear:
@@ -308,5 +313,21 @@ def bSplineGeometry(x,bSpline):
 
 # END OF bSplineGeometry
         
+#==============================================================================
+# Return y given x for a 3rd degree B-spline
+#==============================================================================
+def bSplineGeometryC(x,bSpline):
     
+    if( isinstance(x,float) ):
+        if( x > (bSpline.coefs[0][-1]) ):
+            x = np.array([bSpline.coefs[0][-1]])
+        elif( x < (bSpline.coefs[0][0]) ):
+            x = np.array([bSpline.coefs[0][0]])
+            #raise ValueError("x is outside bounds of B-spline")
+        else:
+            x = np.array([x])
+        
+    (y, dydx) = geometryC.bSplineGeometry(bSpline.knots,bSpline.coefs,x)
+    
+    return (y, dydx)
     
