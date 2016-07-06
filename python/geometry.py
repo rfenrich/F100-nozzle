@@ -7,7 +7,8 @@ Rick Fenrich 6/28/16
 """
 
 import numpy as np 
-import scipy.optimize   
+import scipy.optimize
+import scipy.integrate   
 import geometryC
 
 class Bspline():
@@ -331,3 +332,14 @@ def bSplineGeometryC(x,bSpline):
     
     return (y, dydx)
     
+#==============================================================================
+# Calculate volume of axisymmetric nozzle wall using trapezoidal integration
+#==============================================================================
+def wallVolume(innerWall,thickness):
+    
+    xVolume = np.linspace(0,innerWall.length,1000)
+    volumeIntegrand = np.pi*innerWall.diameter(xVolume)*                     \
+      thickness.radius(xVolume) + np.pi*thickness.radius(xVolume)**2
+    volume = scipy.integrate.trapz(volumeIntegrand,xVolume)
+    
+    return volume

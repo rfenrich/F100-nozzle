@@ -8,10 +8,9 @@ Rick Fenrich 6/28/16
 import numpy as np
 import scipy.optimize
 import scipy.integrate
-import time
-import matplotlib.pyplot as plt
 
 import lifetime
+import geometry
 
 #==============================================================================
 # Sutherland's Law of dynamic viscosity of air
@@ -36,12 +35,6 @@ def massFlowRate(fluid,Pstag,Area,Tstag,M):
     mdot = (gam/((gam+1)/2)**((gam+1)/(2*(gam-1))))*Pstag*Area*              \
       areaMachFunc(gam,M)/np.sqrt(gam*R*Tstag)
     return mdot
-    
-#==============================================================================
-# Ideal analysis of nozzle (no heat transfer or friction)
-#==============================================================================
-def analysisIdeal(nozzle):      
-    pass
 
 #==============================================================================
 # Determine state of nozzle stagnation pressure and temperatures at throat and
@@ -382,7 +375,8 @@ def integrateSubsonic(nozzle,tol,params,xThroat,nPartitions):
 # nozzle geometry
 #==============================================================================
 def integrateShock(nozzle,tol,params,xThroat,nPartitions):
-    pass
+    raise RuntimeError("Shock in nozzle case not implemented yet")
+    return -1
 
 #==============================================================================
 # Integrate supersonic flow through an axial nozzle geometry
@@ -488,7 +482,7 @@ def analysis(nozzle,tol):
     # Initialize
     gam = nozzle.fluid.gam
     xApparentThroat = nozzle.wall.geometry.findMinimumRadius()[0]
-    nOdeIntegrationSteps = 200;
+    nOdeIntegrationSteps = 1000;
     
     # Determine state of nozzle assuming ideal conditions
     pressureRatio = nozzle.inlet.Pstag/nozzle.environment.P
@@ -547,10 +541,10 @@ def analysis(nozzle,tol):
         # Calculate other 1D flow properties
         M = np.sqrt(M2)
         Tstag = np.interp(xPosition,xPositionOld,Tstag)
-        T = Tstag/(1 + (gam-1)*M2/2) # static temp. from stag. temp. def.
+        T = Tstag/(1. + (gam-1.)*M2/2.) # static temp. from stag. temp. def.
         Pstag = nozzle.inlet.Pstag*(A[0]/A)*(areaMachFunc(gam,M[0])/         \
           areaMachFunc(gam,M))*np.sqrt(Tstag/Tstag[0]) # from mass conserv.
-        P = Pstag/(1 + (gam-1)*M2/2)**(gam/(gam-1)) # from stag. press. def.
+        P = Pstag/(1. + (gam-1.)*M2/2.)**(gam/(gam-1)) # from stag. press. def.
         density = P/(nozzle.fluid.R*T)
         U = M*np.sqrt(gam*nozzle.fluid.R*T) # velocity
         Re = density*U*D/dynamicViscosity(T) # Reynolds number from definition
@@ -559,29 +553,29 @@ def analysis(nozzle,tol):
         # Recalculate friction and heat
         # heat transfer coefficient to interior nozzle wall, estimated using
         # Chilton-Colburn analogy
-        hf = nozzle.fluid.Pr(T)**(2/3)*density*nozzle.fluid.Cp(T)*U*Cf/2
+        hf = nozzle.fluid.Pr(T)**(2./3.)*density*nozzle.fluid.Cp(T)*U*Cf/2
         
         # Redefine stagnation temperature distribution
-        TstagXIntegrand = 4/(nozzle.fluid.Cp(T)*density*U*D*(1/hf +          \
-          t/nozzle.wall.material.k + 1/nozzle.environment.hInf))
+        TstagXIntegrand = 4./(nozzle.fluid.Cp(T)*density*U*D*(1./hf +        \
+          t/nozzle.wall.material.k + 1./nozzle.environment.hInf))   
         TstagXIntegral = integrateTrapezoidal(TstagXIntegrand,xPosition)
-        Tstag = nozzle.environment.T*(1 - np.exp(-TstagXIntegral)) +         \
+        Tstag = nozzle.environment.T*(1. - np.exp(-TstagXIntegral)) +        \
           nozzle.inlet.Tstag*np.exp(-TstagXIntegral)
-        dTstagdx = (nozzle.environment.T - Tstag)*4/(nozzle.fluid.Cp(T)*     \
-          density*U*D*(1/hf + t/nozzle.wall.material.k +                     \
-          1/nozzle.environment.hInf))
+        dTstagdx = (nozzle.environment.T - Tstag)*4./(nozzle.fluid.Cp(T)*    \
+          density*U*D*(1./hf + t/nozzle.wall.material.k +                    \
+          1./nozzle.environment.hInf))
           
         # Estimate interior wall temperature
-        Qw = nozzle.fluid.Cp(T)*density*U*D*dTstagdx/4
+        Qw = nozzle.fluid.Cp(T)*density*U*D*dTstagdx/4.
         Tinside = Tstag + Qw/hf # interior wall temperature
-        recoveryFactor = (Tinside/T - 1)/((gam-1)*M2/2)
+        #recoveryFactor = (Tinside/T - 1)/((gam-1)*M2/2)
         
         # Estimate exterior wall temperature
         Toutside = nozzle.environment.T - Qw/nozzle.environment.hInf
     
         # Redefine friction coefficient distribution (Sommer & Short's method)
-        TPrimeRatio = 1 + 0.035*M2 + 0.45*(Tinside/T -1)
-        RePrimeRatio = 1/(TPrimeRatio*(TPrimeRatio)**1.5*(1 + 110.4/T)/      \
+        TPrimeRatio = 1. + 0.035*M2 + 0.45*(Tinside/T - 1.)
+        RePrimeRatio = 1./(TPrimeRatio*(TPrimeRatio)**1.5*(1. + 110.4/T)/    \
           (TPrimeRatio + 110.4/T))
         CfIncomp = 0.074/Re**0.2
         Cf = CfIncomp/TPrimeRatio/RePrimeRatio**0.2
@@ -625,42 +619,35 @@ def analysis(nozzle,tol):
     # END OF while( ~converged )
     
     dAdx = nozzle.wall.geometry.areaGradient(xPosition)
-    
-    # Assign flow data
-    flowDimension = 1 # 1-dimensional flow field
-    # CAN ASSIGN M, U, P, Pstag, Re, Qw etc. here
-    
-    # Assign geometry data
-    # CAN ASSIGN geometry data such as maxSlope, minSlope here
+    maxSlope = max(dAdx/np.pi/D)
+    minSlope = min(dAdx/np.pi/D)
     
     # Calculate mass flow rate
     mdot = massFlowRate(nozzle.fluid,Pstag,A,Tstag,M)
     
     # Calculate thrust
     exitAngle = np.arctan2(dAdx[-1],D[-1])
-    divergenceFactor = (1 + np.cos(exitAngle))/2
-    netThrust = divergenceFactor*mdot[0]*(U - nozzle.mission.mach/           \
+    divergenceFactor = (1. + np.cos(exitAngle))/2.
+    netThrust = divergenceFactor*mdot[0]*(U[-1] - nozzle.mission.mach*       \
       nozzle.environment.c) + (P[-1] - nozzle.environment.P)*A[-1]
-    grossThrust = divergenceFactor*mdot[0]*U + (P[-1] -              \
-      nozzle.environment.P)*A[-1]
+    #grossThrust = divergenceFactor*mdot[0]*U + (P[-1] -                      \
+    #  nozzle.environment.P)*A[-1]
       
     # Calculate stresses
     # Stresses calculated assuming cylinder; nozzle length not constrained in 
     # thermal expansion
-    stressHoop = P*D/(2*t)
-    
+    stressHoop = P*D/(2.*t)
     # Thermal stresses calculated assuming steady-state, give max tens. stress
-    ri = D/2 # inner radius
-    ro = D/2 + t # outer radius
+    ri = D/2. # inner radius
+    ro = D/2. + t # outer radius
     stressThermalRadial = nozzle.wall.material.E*                            \
       nozzle.wall.material.alpha*(Tinside-Toutside)/                         \
-      (2*(1-nozzle.wall.material.v))*(1/np.log(ro/ri))*(1 - 2*ri**2/         \
-      (ro**2 - ri**2)*np.log(ro/ri))
+      (2.*(1.-nozzle.wall.material.v))*(1./np.log(ro/ri))*(1. - 2.*ri**2./   \
+      (ro**2. - ri**2.)*np.log(ro/ri))
     stressThermalTangential = stressThermalRadial
-
     # Estimate vonMises, even though not really valid for composites
-#    stressVonMises = np.sqrt( (stressHoop+stressThermalTangential)**2 -      \
-#      stressHoop*stressThermalRadial + stressThermalRadial**2 )
+    #stressVonMises = np.sqrt( (stressHoop+stressThermalTangential)**2 -      \
+    #   stressHoop*stressThermalRadial + stressThermalRadial**2 )
     stressMaxPrincipal = stressHoop + stressThermalTangential
     stressPrincipal = (stressMaxPrincipal, stressThermalRadial,              \
       np.zeros(xPosition.size))
@@ -669,32 +656,21 @@ def analysis(nozzle,tol):
     Nf = lifetime.estimate(Tinside,stressMaxPrincipal,1)
     
     # Calculate volume of nozzle material (approximately using trap. integ.)
-    # volume = wallVolume(nozzle.wall.geometry.length,D,t,"integrate")
+    volume = geometry.wallVolume(nozzle.wall.geometry,nozzle.wall.thickness)
     
+    # Assign all data for output
+    #flowDimension = 1 # 1-dimensional flow field
     
-        #print xPosition
-        #print M2
-#        plt.plot(xPosition,M2)
-#        plt.axis([0.,0.67,0.,3.])
-#        plt.show()
-#        
-#        plt.plot(xPosition,M)
-#        plt.show()
-#        
-#        plt.plot(xPosition,Tstag,'r-',xPosition,T,'b-')
-#        plt.show()
-#        
-#        plt.plot(xPosition,Pstag,'r-',xPosition,P,'b-')
-#        plt.show()
-#        
-#        plt.plot(xPosition,density)
-#        plt.show()
-#        
-#        plt.plot(xPosition,U)
-#        plt.show()
-#        
-#        plt.plot(xPosition,Re)
-#        plt.show()
+    flowTuple = (M, U, density, P, Pstag, T, Tstag, Re)
+    heatTuple = (Tinside, Toutside, Cf, hf, Qw)
+    geoTuple = (D, A, t, dAdx, minSlope, maxSlope)
+    performanceTuple= (volume, netThrust, Nf, mdot, Pstag[-1]/Pstag[0],      \
+      Tstag[-1]/Tstag[0], status)
+    stressTuple = (stressHoop, stressThermalRadial, stressThermalTangential, \
+      stressMaxPrincipal, stressPrincipal)
+      
+    return (xPosition, flowTuple, heatTuple, geoTuple, stressTuple,          \
+      performanceTuple)
     
 # END OF analysis(nozzle,tol)
     
