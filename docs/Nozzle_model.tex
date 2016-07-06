@@ -11,7 +11,7 @@
 
 \title{F100-PW-220 Non-Ideal Nozzle Model}
 \author{Richard W. Fenrich\\Department of Aeronautics and Astronautics\\Stanford University, Stanford, CA\\rfenrich@stanford.edu}
-\date{May 24, 2016}
+\date{July 6, 2016}
 
 \begin{document}
 
@@ -351,6 +351,42 @@ The thermal stress can be adapted from that of thermal stress in a cylinder:
 \end{equation}
 
 where $E$ is the elastic modulus, $\alpha$ is the thermal expansion coefficient, $T_{inside}(x)$ is the interior temperature of the wall, $T_{outside}(x)$ is the exterior temperature of the wall, $\nu$ is Poisson's ratio, $r_o(x)$ is the radius of the outside of the wall, and $r_i(x)$ is the radius of the inside of the wall.
+
+\subsection{Cycles to Failure Model}
+
+A very rough cycles to failure model is implemented for the nozzle based on experimental data for a Nextel 312/Silicon Oxycarbide ceramic matrix composite (CMC) material\footnote{Gonczy, S. T. and Sikonia, J. G., ``Nextel 312/Silicon Oxycarbide Ceramic Composites'', Handbook of Ceramic Composites, Kluwer Academic Publishers 2005.}. The data for the 8X filtration test material is used. The calculations based on this material's data are extremely approximate as characterizing the properties of CMCs in high-temperature, high-stress environments is still an active research area\footnote{Dave Marshall, a CMC expert from Teledyne, affirmed that the approach taken below is a reasonable first guess at estimating the material properties of a CMC, however its accuracy is another matter. \textit{Phone discussion on April 12, 2016}}.
+
+According to the Gonczy and Sikonia paper, the CMC under examination was found to have degradation of material properties due to three separate effects: fatigue, creep, and oxidation effects which in turn affect the fatigue and creep properties of the material. It is unclear what is meant by oxidation effects since the material is already oxidized.
+
+The purpose of the cycles to failure model is to estimate $N_f$, the number of cycles the material can endure before failing due to a cyclic stress $\Delta \sigma$ and a cyclic temperature $\Delta T$. For the purposes of this model, the stress and thermal cycles were further simplified by assuming the max stress and max temperature occurred as a pulse, \textit{i.e.} the cyclic stresses and temperatures when plotted look like a square wave. In addition, the thermal and stress cycles were assumed to be synchronized, \textit{i.e.} the maximum stress occurs at the same time as the maximum temperature, which in general is not unreasonable for an aircraft engine nozzle.
+
+A number of cycles to failure is estimated for each separate effect and then all are combined into a total cycles to failure $N_f$ using a Miner's rule:
+
+\begin{equation}
+  \frac{1}{N_f} = \frac{1}{N_f^{fatigue}} + \frac{1}{N_f^{oxidation}} + \frac{1}{N_f^{creep}}
+\end{equation}
+
+Note that the Miner's rule has no real physical basis (to my knowledge), and has only been used for metals.
+
+The cycles to failure due to fatigue $N_f^{fatigue}$ can be estimated using an S-N curve (stress vs. cycles to failure). An S-N curve is estimated from two data points in Gonczy and Sikonia's paper, by drawing a straight line in the $log \left( N_f^{fatigue} \right)$ vs. $log \left( \Delta \sigma \right)$ space. A maximum number of cycles was set to be 120,000.
+
+The cycles to failure due to creep $N_f^{creep}$ is based on the equation for strain rate, which when simplified yields:
+
+\begin{equation}
+  \dot{\epsilon} = A \sigma^n e^{\sfrac{Q}{R T}}
+\end{equation}
+
+where $\dot{\epsilon}$ is the strain rate, $A$ is a constant, $\sigma$ is the applied stress, $n$ is a constant, $Q$ is the activation energy for creep, $R$ is the universal gas constant, and $T$ is the temperature. By taking the log of the strain rate equation, a slope and intercept can be estimated using data from Gonczy and Sikonia's paper. Then, by assuming a typical value for the creep activation energy, the creep rate can be calculated as a function of temperature and stress. Finally, the creep cycles to failure can be calculated as:
+
+\begin{equation}
+  N_f^{creep} = \frac{\epsilon_{fail}}{\dot{\epsilon} \Delta t}
+\end{equation}
+
+where $\epsilon_{fail}$ is the failure strain and $\Delta t$ is the amount of time corresponding to one cycle. Failure is assumed to occur at a strain of 0.3\% since experimental data shows failure occurring between 0.1\% and 0.5\% strain.
+
+Finally, the cycles to failure due to oxidation $N_f^{oxidation}$ is estimated by interpolating and extrapolating flexural strength from a plot of flexural strength vs. oxidation time for several temperatures as given in Gonczy and Sikonia's paper. A rule of thumb for polymers is used to translate flexural strength into yield strength, namely $\sigma_{yield} = \sfrac{\sigma_{flexural}}{1.5}$. Thus, for any given max temperature and stress equal to the material's yield stress, a number of cycles to failure due to oxidation effects can be estimated.
+
+In summary, the assumed failure criteria states: when the maximum stress exceeds the yield strength at the given maximum temperature, failure occurs. It cannot be emphasized enough that the above calculations are extremely approximate, and only serve to given ``ballpark'' values of $N_f$.
 
 \end{document}
 
