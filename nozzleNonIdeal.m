@@ -315,7 +315,7 @@ while ~converged
     % Heat transfer
     T = @(x) interpLinear(xPosition,flow.T,x);
     %T = @(x) interp1(xPosition,flow.T,x,'linear');
-    flow.hf = Pr(flow.T).^(2/3).*flow.density.*Cp(flow.T).*flow.U.*Cf(xPosition)/2; % heat transfer coefficient to interior nozzle wall, estimated using Chilton-Colburn analogy
+    flow.hf = Pr(flow.T).^(-2/3).*flow.density.*Cp(flow.T).*flow.U.*Cf(xPosition)/2; % heat transfer coefficient to interior nozzle wall, estimated using Chilton-Colburn analogy
     
     % Redefine stagnation temperature distribution
     TstagXIntegrand = 4./(Cp(flow.T).*flow.density.*flow.U.*D(xPosition).*(1./flow.hf + t(xPosition)/nozzle.wall.k + 1/nozzle.hInf));
